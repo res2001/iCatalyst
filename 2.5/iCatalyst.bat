@@ -4,7 +4,7 @@
 
 setlocal enabledelayedexpansion
 set "name=Image Catalyst"
-set "version=2.5"
+set "version=2.4"
 if "%~1" equ "thrd" call:threadwork %4 %5 "%~2" "%~3" & exit /b
 if "%~1" equ "updateic" call:icupdate & exit /b
 if "%~1" equ "" call:helpmsg & exit /b
@@ -118,7 +118,7 @@ if defined perr (
 	title [Error] %name% %version%
 	if exist "%tmppath%" 1>nul 2>&1 rd /s /q "%tmppath%"
 	1>&2 echo -------------------------------------------------------------------------------
-	1>&2 echo  Unknown value of parameter %perr%.
+	1>&2 echo  Unknown value of setting %perr%.
 	call:helpmsg & exit /b
 )
 if "%png%" equ "0" if "%jpeg%" equ "0" if "%gif%" equ "0" goto:endsetcounters
@@ -502,39 +502,38 @@ if not exist "%~2" (
 )
 if %png% equ 1 (
 	>"%pnglog%" 2>nul truepng -y -i0 -zw5 -zc7 -zm5-9 -zs0-3 -f0,5 -fs:2 %xtreme% -force -out "%filework%" "%~2"
-	if errorlevel 1 (call:saverrorlog "%~f2" "The image is not supported" & goto:pngfileworkerr)
+	if errorlevel 1 (call:saverrorlog "%~f2" "The image is not supported" & goto:pngfwe)
 	for /f "tokens=2,4,6,8,10 delims=:	" %%a in ('findstr /r /i /b /c:"zc:..zm:..zs:" "%pnglog%"') do (
 		set "zc=%%a"
 		set "zm=%%b"
 		set "zs=%%c"
 	)
 	pngwolfzopfli --zopfli-iter=5 --even-if-bigger --zlib-window=15 --zlib-level=!zc! --zlib-memlevel=!zm! --zlib-strategy=!zs! --max-stagnate-time=0 --max-evaluations=1 --in="%filework%" --out="%filework%" 1>nul 2>&1
-	if errorlevel 1 (call:saverrorlog "%~f2" "The image is not supported" & goto:pngfileworkerr)
+	if errorlevel 1 (call:saverrorlog "%~f2" "The image is not supported" & goto:pngfwe)
 )
 if %png% equ 2 (
 	>"%pnglog%" 2>nul truepng -y -i0 -zw5 -zc7 -zm8-9 -zs0-1 -f0,1,5 -fs:2 %advanced% -force -out "%filework%" "%~2"
-	if errorlevel 1 (call:saverrorlog "%~f2" "The image is not supported" & goto:pngfileworkerr)
+	if errorlevel 1 (call:saverrorlog "%~f2" "The image is not supported" & goto:pngfwe)
 	for /f "tokens=2,4,6,8,10 delims=:	" %%a in ('findstr /r /i /b /c:"zc:..zm:..zs:" "%pnglog%"') do (
 		set "zc=%%a"
 		set "zm=%%b"
 		set "zs=%%c"
 	)
 	truepng -y -i0 -zw5 -zc!zc! -zm!zm! -zs!zs! -f5 -fs:7 -na -nc -np "%filework%" 1>nul 2>&1
-	if errorlevel 1 (call:saverrorlog "%~f2" "The image is not supported" & goto:pngfileworkerr)
+	if errorlevel 1 (call:saverrorlog "%~f2" "The image is not supported" & goto:pngfwe)
 	advdef -z3 "%filework%" 1>nul 2>&1
-	if errorlevel 1 (call:saverrorlog "%~f2" "The image is not supported" & goto:pngfileworkerr)
+	if errorlevel 1 (call:saverrorlog "%~f2" "The image is not supported" & goto:pngfwe)
 )
 deflopt -k "%filework%" >nul && defluff < "%filework%" > "%filework%-defluff.png" 2>nul 
-if errorlevel 1 (call:saverrorlog "%~f2" "The image is not supported" & 1>nul 2>&1 del /f/q "%filework%-defluff.png" & goto:pngfileworkerr)
+if errorlevel 1 (call:saverrorlog "%~f2" "The image is not supported" & 1>nul 2>&1 del /f/q "%filework%-defluff.png" & goto:pngfwe)
 1>nul 2>&1 move /y "%filework%-defluff.png" "%filework%" && deflopt -k "%filework%" >nul
-if errorlevel 1 (call:saverrorlog "%~f2" "The image is not supported" & goto:pngfileworkerr)
+if errorlevel 1 (call:saverrorlog "%~f2" "The image is not supported" & goto:pngfwe)
 call:backup2 "%~f2" "%filework%" "%~f3" || set "errbackup=1"
-if %errbackup% neq 0 (call:saverrorlog "%~f2" "The image is not found" & goto:pngfileworkerr)
-if /i "%chunks%" equ "true" (1>nul 2>&1 truepng -nz -md remove all "%~3" || (call:saverrorlog "%~f2" "The image is not supported" & goto:pngfileworkerr))
+if %errbackup% neq 0 (call:saverrorlog "%~f2" "The image is not found" & goto:pngfwe)
+if /i "%chunks%" equ "true" (1>nul 2>&1 truepng -nz -md remove all "%~3" || (call:saverrorlog "%~f2" "The image is not supported" & goto:pngfwe))
 call:savelog "%~f3" %psize%
 if %thread% equ 1 for %%a in ("%~f3") do (set /a "ImageSizePNG+=%%~za" & set /a "TotalSizePNG+=%psize%")
-
-:pngfileworkerr
+:pngfwe
 1>nul 2>&1 del /f /q "%filework%" "%pnglog%"
 exit /b
 
@@ -555,61 +554,58 @@ if not exist "%~2" (
 )
 if %jpeg% equ 1 (
 	mozjpegtran -verbose -revert -optimize -copy all -outfile "%filework%" "%~2" 1>"%jpglog%" 2>&1
-	if errorlevel 1 (call:saverrorlog "%~f2" "The image is not supported" & goto:jpegfileworkerr)
+	if errorlevel 1 (call:saverrorlog "%~f2" "The image is not supported" & goto:jpegfwe)
 	for /f "tokens=4,10 delims=:,= " %%a in ('findstr /C:"Start Of Frame" "%jpglog%" 2^>nul') do (set "ep=%%a")
-	if "!ep!" equ "0xc0" goto:jpegfileworkbackup
+	if "!ep!" equ "0xc0" goto:jpegfwb
 	if "!ep!" equ "0xc2" (
 		if /i "%~f2" equ "%~f3" (1>nul 2>&1 move /y "%filework%" "%~f3" || set "errbackup=1")
-		goto:jpegfileworkfinish
+		goto:jpegfwf
 	) else (
-		call:saverrorlog "%~f2" "The image is not supported" & goto:jpegfileworkerr
+		call:saverrorlog "%~f2" "The image is not supported" & goto:jpegfwe
 	)
 )
 if %jpeg% equ 2 (
 	mozjpegtran -verbose -copy all -outfile "%filework%" "%~2" 1>"%jpglog%" 2>&1
-	if errorlevel 1 (call:saverrorlog "%~f2" "The image is not supported" & goto:jpegfileworkerr)
+	if errorlevel 1 (call:saverrorlog "%~f2" "The image is not supported" & goto:jpegfwe)
 	for /f "tokens=4,10 delims=:,= " %%a in ('findstr /C:"Start Of Frame" "%jpglog%" 2^>nul') do (set "ep=%%a")
-	if "!ep!" equ "0xc2" goto:jpegfileworkbackup
+	if "!ep!" equ "0xc2" goto:jpegfwb
 	if "!ep!" equ "0xc0" (
 		if /i "%~f2" equ "%~f3" (1>nul 2>&1 move /y "%filework%" "%~f3" || set "errbackup=1")
-		goto:jpegfileworkfinish
+		goto:jpegfwf
 	) else (
-		call:saverrorlog "%~f2" "The image is not supported" & goto:jpegfileworkerr
+		call:saverrorlog "%~f2" "The image is not supported" & goto:jpegfwe
 	)
 )
 if %jpeg% equ 3 (
 	jpginfo "%~2" 1>"%jpglog%" 2>&1
-	if errorlevel 1 (call:saverrorlog "%~f2" "The image is not supported" & goto:jpegfileworkerr)
+	if errorlevel 1 (call:saverrorlog "%~f2" "The image is not supported" & goto:jpegfwe)
 	for /f "usebackq tokens=5" %%a in ("%jpglog%") do set "ep=%%~a"
 	if /i "!ep!" equ "Baseline" (
 		mozjpegtran -verbose -revert -optimize -copy all -outfile "%filework%" "%~2" 1>nul 2>&1
-		if errorlevel 1 (call:saverrorlog "%~f2" "The image is not supported" & goto:jpegfileworkerr)
-		goto:jpegfileworkbackup
+		if errorlevel 1 (call:saverrorlog "%~f2" "The image is not supported" & goto:jpegfwe)
+		goto:jpegfwb
 	)
 	if /i "!ep!" equ "Progressive" (
 		mozjpegtran -verbose -copy all -outfile "%filework%" "%~2" 1>nul 2>&1
-		if errorlevel 1 (call:saverrorlog "%~f2" "The image is not supported" & goto:jpegfileworkerr)
-		goto:jpegfileworkbackup
+		if errorlevel 1 (call:saverrorlog "%~f2" "The image is not supported" & goto:jpegfwe)
+		goto:jpegfwb
 	)
-	call:saverrorlog "%~f2" "The image is not supported" & goto:jpegfileworkerr
+	call:saverrorlog "%~f2" "The image is not supported" & goto:jpegfwe
 )
-
-:jpegfileworkbackup
+:jpegfwb
 if /i "%~f2" neq "%~f3" (
 	call:backup "%filework%" "%~f2" >nul || set "errbackup=1"
 ) else (
 	call:backup "%~f2" "%filework%" true >nul || set "errbackup=1"
 )
-
-:jpegfileworkfinish
+:jpegfwf
 1>nul 2>&1 del /f /q "%jpglog%"
-if %errbackup% neq 0 (call:saverrorlog "%~f2" "The image is not found" & goto:jpegfileworkerr)
+if %errbackup% neq 0 (call:saverrorlog "%~f2" "The image is not found" & goto:jpegfwe)
 if /i "%metadata%" equ "true" (1>nul 2>&1 jpegstripper -y "%~f3" || (call:saverrorlog "%~f2" "The image is not supported" & exit /b))
 call:savelog "%~f3" %jsize%
 if %thread% equ 1 for %%a in ("%~f3") do (set /a "ImageSizeJPG+=%%~za" & set /a "TotalSizeJPG+=%jsize%")
 exit /b
-
-:jpegfileworkerr
+:jpegfwe
 if /i "%~f2" neq "%~f3" (1>nul 2>&1 del /f /q "%filework%")
 1>nul 2>&1 del /f /q "%jpglog%"
 exit /b 1
@@ -629,9 +625,9 @@ if not exist "%~2" (
 	exit /b 1
 )
 gifsicle --batch %giftags% --optimize=3 --output "%filework1%" "%~2" 1>nul 2>&1
-if errorlevel 1 (call:saverrorlog "%~f2" "The image is not supported" & goto:giffileworkerr)
+if errorlevel 1 (call:saverrorlog "%~f2" "The image is not supported" & goto:giffwe)
 gifsicle --batch %giftags% --output "%filework2%" "%~2" 1>nul 2>&1
-if errorlevel 1 (call:saverrorlog "%~f2" "The image is not supported" & goto:giffileworkerr)
+if errorlevel 1 (call:saverrorlog "%~f2" "The image is not supported" & goto:giffwe)
 if /i "%~f2" neq "%~f3" (
 	call:backup "%filework1%" "%~f2" >nul || set "errbackup=1"
 	call:backup "%filework1%" "%filework2%" true >nul || set "errbackup=1"
@@ -639,12 +635,11 @@ if /i "%~f2" neq "%~f3" (
 	call:backup "%~f3" "%filework1%" true >nul || set "errbackup=1"
 	call:backup "%~f3" "%filework2%" true >nul || set "errbackup=1"
 )
-if %errbackup% neq 0 (call:saverrorlog "%~f2" "The image is not found" & goto:giffileworkerr)
+if %errbackup% neq 0 (call:saverrorlog "%~f2" "The image is not found" & goto:giffwe)
 call:savelog "%~f3" %gsize%
 if %thread% equ 1 for %%a in ("%~f3") do (set /a "ImageSizeGIF+=%%~za" & set /a "TotalSizeGIF+=%jsize%")
 exit /b
-
-:giffileworkerr
+:giffwe
 if /i "%~f2" neq "%~f3" 1>nul 2>&1 del /f /q "%filework1%"
 1>nul 2>&1 del /f /q "%filework2%"
 exit /b 1
@@ -775,7 +770,8 @@ if /i "%updatecheck%" equ "true" (
 	if exist "%iculog%" (
 		call:readini "%iculog%"
 		if "%version%" neq "!ver!" (
-			echo.New version available %name% !ver!.
+			echo  New version available %name% !ver!.
+			echo -------------------------------------------------------------------------------
 			start "" !url!
 		)
 		1>nul 2>&1 del /f /q "%iculog%"
@@ -842,21 +838,21 @@ title [Manual] %name% %version%
 1>&2 echo  /png:#	Optimization settings PNG:
 1>&2 echo 	1 - Compression level - Xtreme;
 1>&2 echo 	2 - Compression level - Advanced;
-1>&2 echo 	0 - Skip PNG optimization.
+1>&2 echo 	0 - Skip PNG optimization (default).
 1>&2 echo.
 1>&2 echo  /jpg:#	Optimization settings JPEG:
 1>&2 echo 	1 - Encoding Process - Baseline;
 1>&2 echo 	2 - Encoding Process - Progressive;
 1>&2 echo 	3 - Optimization settings default;
-1>&2 echo 	0 - Skip JPEG optimization.
+1>&2 echo 	0 - Skip JPEG optimization (default).
 1>&2 echo.
 1>&2 echo  /gif:#	Optimization settings GIF:
 1>&2 echo 	1 - Optimization settings default:
-1>&2 echo 	0 - Skip GIF optimization.
+1>&2 echo 	0 - Skip GIF optimization (default).
 1>&2 echo.
 1>&2 echo  "/outdir:#" Settings save optimized images:
 1>&2 echo 	true  - replace the original image on optimized;
-1>&2 echo 	false - open dialog box for saving images;
+1>&2 echo 	false - open dialog box for saving images (default);
 1>&2 echo 	"full path to folder - specify the folder to save images.
 1>&2 echo 	for example: "/outdir:C:\temp", if the destination folder does not 
 1>&2 echo 	exist, it will be created automatically.
@@ -874,7 +870,6 @@ call:dopause & exit /b
 :errormsg
 title [Error] %name% %version%
 if exist "%tmppath%" 1>nul 2>&1 rd /s /q "%tmppath%"
-::if "%~1" neq "" 1>nul 2>&1 dlgmsgbox "Image Catalyst" "Msg1" " " "%~1" "E0" "%errortimewait%"
 if "%~1" neq "" echo.%~1
 call:dopause
 exit /b
