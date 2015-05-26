@@ -460,19 +460,25 @@ if %jpeg% equ 2 (set "jpegtitle=Progressive")
 if %jpeg% equ 3 (set "jpegtitle=Default")
 if %gif% equ 1  (set "giftitle=Default")
 set "titlestr="
+set "tmpn=0"
 if %png% gtr 0  (
 	set /a "perc=%ImageNumPNG%*100/%TotalNumPNG%"
-	set "titlestr=[PNG %pngtitle%: !perc!%%]"
+	set "titlestr=PNG %pngtitle%: !perc!%%"
 )
 if %jpeg% gtr 0 (
 	set /a "perc=%ImageNumJPG%*100/%TotalNumJPG%"
-	set "titlestr=%titlestr%[JPEG %jpegtitle%: !perc!%%]"
+	if %png% gtr 0 set "titlestr=%titlestr%^|"
+	set "titlestr=!titlestr!JPEG %jpegtitle%: !perc!%%"
 )
 if %gif% gtr 0 (
 	set /a "perc=%ImageNumGIF%*100/%TotalNumGIF%"
-	set "titlestr=%titlestr%[GIF %giftitle%: !perc!%%]"
+	set /a "tmpn=%jpeg%+%png%"
+	if %tmpn% gtr 0 (set "titlestr=%titlestr%^|")
+	set "titlestr=!titlestr!GIF %giftitle%: !perc!%%"
 )
-title %~1%titlestr% %name% %version%
+title [%titlestr%] %name% %version%
+set "titlestr="
+set "tmpn="
 exit /b
 
 :filework
