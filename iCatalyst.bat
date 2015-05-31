@@ -317,12 +317,12 @@ call:echostd " File  - %~f1"
 if "%~4" neq "0" (
 	set "float=%2"
 	call:division float 1024 100
-	call:echostd " In    - !float! Š"
+	call:echostd " In    - !float! KB"
 	set "change=%4"
 	call:division change 1024 100
 	set "float=%3"
 	call:division float 1024 100
-	call:echostd " Out   - !float! Š (!change! Š, %5%%%%%%)"
+	call:echostd " Out   - !float! KB (!change! KB, %5%%%%%%)"
 ) else (
 	call:echostd " Skip  - This image cannot be optimized any further"
 )
@@ -797,7 +797,7 @@ if "%tt%" neq "0" (
 	call:echostd " Optimized %1:		%opt%"
 	if "%nopt%" neq "0" call:echostd " Not optimized %1:	%nopt%"
 	if "%tterr%" neq "0" call:echostd " Skipped %1:		%tterr%"
-	call:echostd " Total %1:  		%%change%1%% Š, %%perc%1%%%%%%"
+	call:echostd " Total %1:  		%%change%1%% KB, %%perc%1%%%%%%"
 	call:echostd
 )
 exit /b
