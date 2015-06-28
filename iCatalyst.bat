@@ -833,7 +833,7 @@ title [Manual] %name% %version%
 1>&2 echo.
 1>&2 echo  Recommended to examine ReadMe
 1>&2 echo.
-1>&2 echo  iCatalyst.bat [options] [add folders \ add files]
+1>&2 echo  call iCatalyst.bat [options] [add folders \ add files]
 1>&2 echo.
 1>&2 echo  Options:
 1>&2 echo  /png:#	Optimization settings PNG:
