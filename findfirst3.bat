@@ -5,6 +5,7 @@
 ::	2.Последовательный поиск первого вхождения трех типов файлов, каждый тип файлов в своем цикле, последовательный поиск.
 ::	3.Параллельный поиск первого вхождения трех типов файлов, каждый тип файлов в своем процессе. Межпроцессный обмен с помощью временных файлов. Поиск последнего типа файлов запускается в основном процессе.
 ::Параметры: %1 - путь к каталогу, в котором будет производится поиск.
+::Вариант 3
 setlocal enabledelayedexpansion
 if "%~2" equ "findfirst" goto:findfirst
 
@@ -18,38 +19,7 @@ set "giflock=gif.lck"
 set "jpgtmp=jpg.tmp"
 set "pngtmp=png.tmp"
 set "giftmp=gif.tmp"
-set "timeout=3"
-
-echo.1.Одновременный поиск (в одном цикле все типы файлов)
-call:initvars
-echo.%time%
-for /r "%~1" %%a in (%alltypes%) do (
-	if /i "%%~xa" equ ".jpg" if not defined jpg set "jpg=1"
-	if /i "%%~xa" equ ".png" if not defined png set "png=1"
-	if /i "%%~xa" equ ".gif" if not defined gif set "gif=1"
-	if defined jpg if defined png if defined gif goto:fin1
-)
-:fin1
-echo.%time%
-echo.jpg=%jpg%	png=%png%	gif=%gif%
-if defined jpg if defined png if defined gif (echo.Найдены все типы & goto:fin11)
-echo.Найдены не все типы
-:fin11
-
-echo.2.Последовательный поиск (каждый тип файлов в своем цикле)
-call:initvars
-echo.%time%
-for /r "%~1" %%a in (%jpgtype%) do set "jpg=1" & goto:fin2jpg
-:fin2jpg
-for /r "%~1" %%a in (%pngtype%) do set "png=1" & goto:fin2png
-:fin2png
-for /r "%~1" %%a in (%giftype%) do set "gif=1" & goto:fin2gif
-:fin2gif
-echo.%time%
-echo.jpg=%jpg%	png=%png%	gif=%gif%
-if defined jpg if defined png if defined gif (echo.Найдены все типы & goto:fin2)
-echo.Найдены не все типы
-:fin2
+set "timeout=3000"
 
 echo.3.Параллельный поиск (каждый тип файлов в своем процессе)
 call:initvars
