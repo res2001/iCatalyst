@@ -756,7 +756,7 @@ call:echostd " Started  at - %stime%"
 call:echostd " Finished at - %ftime%"
 1>&2 echo.
 1>&2 echo.-------------------------------------------------------------------------------
-call:listerrfiles
+1>&2 call:listerrfiles
 1>&2 echo. Image optimization is completed.
 1>&2 echo.-------------------------------------------------------------------------------
 if /i "%updatecheck%" equ "true" (
@@ -801,18 +801,20 @@ exit /b
 set "iserr="
 for %%a in ("%filelisterr%") do if %%~za gtr 0 (
 	set "iserr=1"
-	1>&2 echo.
-	1>&2 echo. Image with characters:
+	echo.
+	echo. Image with characters:
 	type "%%~a"
-	1>&2 echo.
+	echo.
 )
+set "iserr2="
 for /f "tokens=2* delims=:" %%a in ('findstr /e /i /r /c:";error" "%logfile%*" 2^>nul') do (
-	if not defined iserr (set "iserr=1" & 1>&2 echo.)
-	1>&2 echo. Images with errors:
-	for /f "tokens=1-2 delims=;" %%c in ("%%~b") do 1>&2 echo. %%~c
-	1>&2 echo.
+	if not defined iserr (set "iserr=1" & echo.)
+	if not defined iserr2 (echo. Images with errors:& set "iserr2=1")
+	for /f "tokens=1-2 delims=;" %%c in ("%%~b") do echo. %%~c
 )
-if defined iserr (1>&2 echo.-------------------------------------------------------------------------------)
+if defined iserr2 echo.
+if defined iserr (echo.-------------------------------------------------------------------------------)
+set "iserr=" & set "iserr2="
 exit /b
 
 :readini
