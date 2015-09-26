@@ -194,7 +194,6 @@ echo.---------------------------------------------------------------------------
 if /i "%updatecheck%" equ "true" start "" /b cmd.exe /c ""%fullname%" updateic"
 call:setitle
 call:setvtime stime
-set "outdirs="
 for /f "usebackq tokens=1,2 delims=	" %%a in ("%filelist%") do (
 	call:initsource "%%~a"
 	if defined ispng if "%png%" neq "0" call:filework "%%~fa" "%%~fb" png %thread% ImageNumPNG
