@@ -490,8 +490,8 @@ if %thread% gtr 1 (
 		for %%b in ("%countGIF%.%%c") do set /a "ImageNumGIF+=%%~zb/3" 2>nul
 	)
 )
-if %png% equ 1  (set "pngtitle=Xtreme")
-if %png% equ 2  (set "pngtitle=Advanced")
+if %png% equ 1  (set "pngtitle=Advanced")
+if %png% equ 2  (set "pngtitle=Xtreme")
 if %jpeg% equ 1 (set "jpegtitle=Baseline")
 if %jpeg% equ 2 (set "jpegtitle=Progressive")
 if %jpeg% equ 3 (set "jpegtitle=Default")
