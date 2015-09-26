@@ -327,8 +327,6 @@ set "optsize=          !optsize!"
 set "change=%4"
 call:division change 1024 100
 set "change=          !change!"
-set "float=%3"
-call:division float 1024 100
 set "percent=          %5%%"
 echo.^|%fn:~,30%^|%origsize:~-11%^|%optsize:~-11%^|%change:~-10%^|%percent:~-10%^|
 exit /b
