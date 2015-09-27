@@ -107,7 +107,14 @@ set "countPNG=%tmppath%\countpng"
 set "countJPG=%tmppath%\countjpg"
 set "countGIF=%tmppath%\countgif"
 set "filelist=%tmppath%\filelist"
+::For Images with characters
 set "filelisterr=%tmppath%\filerr"
+::For Images are already optimized
+set "filelisterr1=%tmppath%\filerr1"
+::For Images are not supported
+set "filelisterr2=%tmppath%\filerr2"
+::For Images are not found
+set "filelisterr3=%tmppath%\filerr3"
 set "thread=" & set "updatecheck=" & set "outdir=" & set "nooutfolder="
 set "jpegtags=" & set "xtreme=" & set "advanced=" & set "pngtags=" & set "giftags="
 call:readini "%configpath%"
@@ -188,8 +195,8 @@ for /l %%a in (1,1,%thread%) do (
 )
 cls
 echo.------------------------------------------------------------------------------
-echo.^| File Name                    ^| Original  ^| Optimized ^| Savings, ^|%%%% Savings^|
-echo.^|                              ^| Size, KB  ^| Size, KB  ^| KB       ^|          ^|
+echo. File Name                    ^| Original  ^| Optimized ^| Savings, ^| %% Savings
+echo.                              ^| Size, KB  ^| Size, KB  ^| KB       ^|
 echo.------------------------------------------------------------------------------
 if /i "%updatecheck%" equ "true" start "" /b cmd.exe /c ""%fullname%" updateic"
 call:setitle
@@ -313,10 +320,20 @@ for /f "usebackq skip=%3 tokens=1-5 delims=;" %%b in ("%~1") do (
 exit /b
 
 :printfileinfo
-set "fn=%~nx1                                        "
 if "%~4" equ "0" (
-	echo.^|%fn:~,30%^|    Skip - The image is already optimized    ^|
+	>>"%filelisterr1%" echo.%~f1
 	exit /b
+)
+setlocal  
+set "fn=%~nx1                                        "
+set "xfnext=%~x1"
+set "xfnlen=0"
+set "xfnextlen=0"
+call:strlen fn xfnlen
+if %xfnlen% gtr 30 (
+	call:strlen xfnext xfnextlen
+	set /a "xfnextlen=30-!xfnextlen!-2"
+	call set "fn=%%fn:~,%xfnextlen%%%..%xfnext%"
 )
 set "origsize=%2"
 call:division origsize 1024 100
@@ -328,32 +345,37 @@ set "change=%4"
 call:division change 1024 100
 set "change=          !change!"
 set "percent=          %5%%"
-echo.^|%fn:~,30%^|%origsize:~-11%^|%optsize:~-11%^|%change:~-10%^|%percent:~-10%^|
+echo. %fn:~,30%^|%origsize:~-11%^|%optsize:~-11%^|%change:~-10%^|%percent:~-10%
+endlocal
 exit /b
 
 :printfileerr
+setlocal
 set "fn=%~nx1                                        "
 set "errmsg=%~2"
 call:centerstring errmsg 45
-1>&2 echo.^|%fn:~,30%^|%errmsg%^|
+1>&2 echo. %fn:~,30%^|%errmsg%
+endlocal
 exit /b
 
 :centerstring StrVar Length
 if "%~1" equ "" exit /b
 if not defined %~1 exit /b
+setlocal
 set "xstringlen=0"
-call:strlen %~1 xstringlen
 set "xstr=!%~1!"
-if %xstringlen% geq %~2 (
-	call set "%~1=!xstr:~,%~2!"
-	exit /b
-)
+call:strlen xstr xstringlen
+set "xstradd=                                                                                                    "
 set /a "xstraddlen=(%~2-%xstringlen%)/2"
-set "xstradd="
-for /l %%x in (1,1,%xstraddlen%) do set "xstradd=!xstradd! "
-set "%~1=%xstradd%!%~1!%xstradd%"
-set /a "xstraddlen=%xstringlen%+%xstraddlen%*2"
-if %xstraddlen% lss %~2 set "%~1= !%~1!"
+set "xstradd=!xstradd:~,%xstraddlen%!"
+if %xstringlen% geq %~2 (
+	set "xstr=!xstr:~,%~2!"
+) else (
+	set "xstr=!xstradd!%xstr%!xstradd!"
+	set /a "xstraddlen=xstringlen+xstraddlen*2"
+	if !xstraddlen! lss %~2 set "xstr= !xstr!"
+)
+endlocal & set "%~1=%xstr%"
 exit /b
 
 ::original: http://forum.script-coding.com/viewtopic.php?pid=71000#p71000
@@ -542,38 +564,38 @@ set "logfile2=%logfile%png.%1"
 set "pnglog=%tmppath%\png%1.log"
 set "filework=%tmppath%\%~n2-ic%1%~x2"
 if not exist "%~2" (
-	call:saverrorlog "%~f2" "The image is not found"
+	call:saverrorlog "%~f2" 3 %~1
 	exit /b 1
 )
 if %png% equ 2 (
 	>"%pnglog%" 2>nul truepng -y -i0 -zw7 -zc7 -zm5-9 -zs0-3 -f0,5 -fs:2 %xtreme% -force -out "%filework%" "%~2"
-	if errorlevel 1 (call:saverrorlog "%~f2" "The image is not supported" & goto:pngfwe)
+	if errorlevel 1 (call:saverrorlog "%~f2" 2 %~1 & goto:pngfwe)
 	for /f "tokens=2,4,6,8,10 delims=:	" %%a in ('findstr /r /i /b /c:"zc:..zm:..zs:" "%pnglog%"') do (
 		set "zc=%%a"
 		set "zm=%%b"
 		set "zs=%%c"
 	)
 	pngwolfzopfli --zopfli-iter=10 --zopfli-maxsplit=0 --zlib-window=15 --zlib-level=!zc! --zlib-memlevel=!zm! --zlib-strategy=!zs! --max-stagnate-time=0 --max-evaluations=1 --in="%filework%" --out="%filework%" 1>nul 2>&1
-	if errorlevel 1 (call:saverrorlog "%~f2" "The image is not supported" & goto:pngfwe)
+	if errorlevel 1 (call:saverrorlog "%~f2" 2 %~1 & goto:pngfwe)
 )
 if %png% equ 1 (
 	>"%pnglog%" 2>nul truepng -y -i0 -zw7 -zc7 -zm8-9 -zs0-1 -f0,1,5 -fs:2 %advanced% -force -out "%filework%" "%~2"
-	if errorlevel 1 (call:saverrorlog "%~f2" "The image is not supported" & goto:pngfwe)
+	if errorlevel 1 (call:saverrorlog "%~f2" 2 %~1 & goto:pngfwe)
 	for /f "tokens=2,4,6,8,10 delims=:	" %%a in ('findstr /r /i /b /c:"zc:..zm:..zs:" "%pnglog%"') do (
 		set "zc=%%a"
 		set "zm=%%b"
 		set "zs=%%c"
 	)
 	truepng -y -i0 -zw7 -zc!zc! -zm!zm! -zs!zs! -f5 -fs:7 -na -nc -np "%filework%" 1>nul 2>&1
-	if errorlevel 1 (call:saverrorlog "%~f2" "The image is not supported" & goto:pngfwe)
+	if errorlevel 1 (call:saverrorlog "%~f2" 2 %~1 & goto:pngfwe)
 	advdef -z3 "%filework%" 1>nul 2>&1
-	if errorlevel 1 (call:saverrorlog "%~f2" "The image is not supported" & goto:pngfwe)
+	if errorlevel 1 (call:saverrorlog "%~f2" 2 %~1 & goto:pngfwe)
 )
 deflopt -k "%filework%" 1>nul 2>&1
-if errorlevel 1 (call:saverrorlog "%~f2" "The image is not supported" & goto:pngfwe)
+if errorlevel 1 (call:saverrorlog "%~f2" 2 %~1 & goto:pngfwe)
 call:backup2 "%~f2" "%filework%" "%~f3" || set "errbackup=1"
-if %errbackup% neq 0 (call:saverrorlog "%~f2" "The image is not supported" & goto:pngfwe)
-if /i "%pngtags%" equ "true" (1>nul 2>&1 truepng -nz -md remove all "%~3" || (call:saverrorlog "%~f2" "The image is not supported" & goto:pngfwe))
+if %errbackup% neq 0 (call:saverrorlog "%~f2" 2 %~1 & goto:pngfwe)
+if /i "%pngtags%" equ "true" (1>nul 2>&1 truepng -nz -md remove all "%~3" || (call:saverrorlog "%~f2" 2 %~1 & goto:pngfwe))
 call:savelog "%~f3" %psize%
 if %thread% equ 1 for %%a in ("%~f3") do (set /a "ImageSizePNG+=%%~za" & set /a "TotalSizePNG+=%psize%")
 :pngfwe
@@ -595,48 +617,44 @@ if /i "%~f2" equ "%~f3" (
 	set "filework=%~f3"
 )
 if not exist "%~2" (
-	call:saverrorlog "%~f2" "The image is not found"
+	call:saverrorlog "%~f2" 3 %~1
 	exit /b 1
 )
 if %jpeg% equ 1 (
 	jpegtran -verbose -revert -optimize -copy all -outfile "%filework%" "%~2" 1>"%jpglog%" 2>&1
-	if errorlevel 1 (call:saverrorlog "%~f2" "The image is not supported" & goto:jpegfwe)
+	if errorlevel 1 (call:saverrorlog "%~f2" 2 %~1 & goto:jpegfwe)
 	for /f "tokens=4,10 delims=:,= " %%a in ('findstr /C:"Start Of Frame" "%jpglog%" 2^>nul') do (set "ep=%%a")
 	if "!ep!" equ "0xc0" goto:jpegfwb
 	if "!ep!" equ "0xc2" (
 		if /i "%~f2" equ "%~f3" (1>nul 2>&1 move /y "%filework%" "%~f3" || set "errbackup=1")
 		goto:jpegfwf
 	) else (
-		call:saverrorlog "%~f2" "The image is not supported" & goto:jpegfwe
+		call:saverrorlog "%~f2" 2 %~1 & goto:jpegfwe
 	)
 )
 if %jpeg% equ 2 (
 	jpegtran -verbose -copy all -outfile "%filework%" "%~2" 1>"%jpglog%" 2>&1
-	if errorlevel 1 (call:saverrorlog "%~f2" "The image is not supported" & goto:jpegfwe)
+	if errorlevel 1 (call:saverrorlog "%~f2" 2 %~1 & goto:jpegfwe)
 	for /f "tokens=4,10 delims=:,= " %%a in ('findstr /C:"Start Of Frame" "%jpglog%" 2^>nul') do (set "ep=%%a")
 	if "!ep!" equ "0xc2" goto:jpegfwb
 	if "!ep!" equ "0xc0" (
 		if /i "%~f2" equ "%~f3" (1>nul 2>&1 move /y "%filework%" "%~f3" || set "errbackup=1")
 		goto:jpegfwf
 	) else (
-		call:saverrorlog "%~f2" "The image is not supported" & goto:jpegfwe
+		call:saverrorlog "%~f2" 2 %~1 & goto:jpegfwe
 	)
 )
 if %jpeg% equ 3 (
 	jpginfo "%~2" 1>"%jpglog%" 2>&1
-	if errorlevel 1 (call:saverrorlog "%~f2" "The image is not supported" & goto:jpegfwe)
+	if errorlevel 1 (call:saverrorlog "%~f2" 2 %~1 & goto:jpegfwe)
 	for /f "usebackq tokens=5" %%a in ("%jpglog%") do set "ep=%%~a"
 	if /i "!ep!" equ "Baseline" (
-		jpegtran -verbose -revert -optimize -copy all -outfile "%filework%" "%~2" 1>nul 2>&1
-		if errorlevel 1 (call:saverrorlog "%~f2" "The image is not supported" & goto:jpegfwe)
-		goto:jpegfwb
+		jpegtran -verbose -revert -optimize -copy all -outfile "%filework%" "%~2" 1>nul 2>&1 &&	goto:jpegfwb
 	)
 	if /i "!ep!" equ "Progressive" (
-		jpegtran -verbose -copy all -outfile "%filework%" "%~2" 1>nul 2>&1
-		if errorlevel 1 (call:saverrorlog "%~f2" "The image is not supported" & goto:jpegfwe)
-		goto:jpegfwb
+		jpegtran -verbose -copy all -outfile "%filework%" "%~2" 1>nul 2>&1 && goto:jpegfwb
 	)
-	call:saverrorlog "%~f2" "The image is not supported" & goto:jpegfwe
+	call:saverrorlog "%~f2" 2 %~1 & goto:jpegfwe
 )
 :jpegfwb
 if /i "%~f2" neq "%~f3" (
@@ -646,8 +664,8 @@ if /i "%~f2" neq "%~f3" (
 )
 :jpegfwf
 1>nul 2>&1 del /f /q "%jpglog%"
-if %errbackup% neq 0 (call:saverrorlog "%~f2" "The image is not found" & goto:jpegfwe)
-if /i "%jpegtags%" equ "true" (1>nul 2>&1 jpegstripper -y "%~f3" || (call:saverrorlog "%~f2" "The image is not supported" & exit /b))
+if %errbackup% neq 0 (call:saverrorlog "%~f2" 3 %~1 & goto:jpegfwe)
+if /i "%jpegtags%" equ "true" (1>nul 2>&1 jpegstripper -y "%~f3" || (call:saverrorlog "%~f2" 2 %~1 & exit /b))
 call:savelog "%~f3" %jsize%
 if %thread% equ 1 for %%a in ("%~f3") do (set /a "ImageSizeJPG+=%%~za" & set /a "TotalSizeJPG+=%jsize%")
 exit /b
@@ -673,13 +691,13 @@ if /i "%~f2" equ "%~f3" (
 set "filework2=%tmppath%\%~n2%1%-gifsicle2~x1"
 set "filework=%filework%%filework2%"
 if not exist "%~2" (
-	call:saverrorlog "%~f2" "The image is not found"
+	call:saverrorlog "%~f2" 3 %~1
 	exit /b 1
 )
 gifsicle --batch %giftags% --optimize=3 --output "%filework1%" "%~2" 1>nul 2>&1
-if errorlevel 1 (call:saverrorlog "%~f2" "The image is not supported" & goto:giffwe)
+if errorlevel 1 (call:saverrorlog "%~f2" 2 %~1 & goto:giffwe)
 gifsicle --batch %giftags% --output "%filework2%" "%~2" 1>nul 2>&1
-if errorlevel 1 (call:saverrorlog "%~f2" "The image is not supported" & goto:giffwe)
+if errorlevel 1 (call:saverrorlog "%~f2" 2 %~1 & goto:giffwe)
 if /i "%~f2" neq "%~f3" (
 	call:backup "%filework1%" "%~f2" >nul || set "errbackup=1"
 	call:backup "%filework1%" "%filework2%" true >nul || set "errbackup=1"
@@ -687,7 +705,7 @@ if /i "%~f2" neq "%~f3" (
 	call:backup "%~f3" "%filework1%" true >nul || set "errbackup=1"
 	call:backup "%~f3" "%filework2%" true >nul || set "errbackup=1"
 )
-if %errbackup% neq 0 (call:saverrorlog "%~f2" "The image is not found" & goto:giffwe)
+if %errbackup% neq 0 (call:saverrorlog "%~f2" 3 %~1 & goto:giffwe)
 call:savelog "%~f3" %gsize%
 if %thread% equ 1 for %%a in ("%~f3") do (set /a "ImageSizeGIF+=%%~za" & set /a "TotalSizeGIF+=%jsize%")
 exit /b
@@ -721,8 +739,13 @@ if defined cone (
 )
 exit /b 0
 
+::%1 - optimize file path
+::%2 - original file size
+::%3 - thread number
 :savelog
 set /a "change=%~z1-%2"
+if %change% equ 0 (
+	call:saverrorlog %1 1 
 set /a "perc=%change%*100/%2" 2>nul
 set /a "fract=%change%*100%%%2*100/%2" 2>nul
 set /a "perc=%perc%*100+%fract%"
@@ -733,10 +756,16 @@ if %thread% equ 1 (
 )
 exit /b
 
+::%1 - file name
+::%2 - 	1 - Images are already optimized
+::	2 - Images are not supported
+::	3 - Images are not found
+::%3 -	thread number
 :saverrorlog
 if exist "%filework%" 1>nul 2>&1 del /f /q "%filework%"
->>"%logfile2%" echo.%~1;%~2;error
-if %thread% equ 1 (call:printfileerr "%~f1" "%~2")
+if "%~2" equ "" exit /b
+>>"%filelisterr%%~2.%~3" echo.%~f1
+if %thread% equ 1 (call:printfileerr "%~f1" %~2)
 exit /b
 
 ::%1 - variable name for division (dividend)
