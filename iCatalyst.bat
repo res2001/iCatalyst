@@ -88,9 +88,12 @@ for %%a in (JPG PNG GIF) do (
 	set "TotalNum%%a=0"
 	set "TotalNumErr%%a=0"
 	set "TotalSize%%a=0"
+	set "STotalSize%%a=0"
 	set "ImageSize%%a=0"
+	set "SImageSize%%a=0"
 	set "change%%a=0"
 	set "perc%%a=0"
+	set "step%%a=10"
 )
 set "png="
 set "jpeg="
@@ -115,6 +118,11 @@ set "filelisterr1=%tmppath%\filerr1"
 set "filelisterr2=%tmppath%\filerr2"
 ::For Images are not found
 set "filelisterr3=%tmppath%\filerr3"
+::Table size
+set "TFN=29"
+::restrictions
+set "BYTECONV=1000000"
+
 set "thread=" & set "updatecheck=" & set "outdir=" & set "nooutfolder="
 set "jpegtags=" & set "xtreme=" & set "advanced=" & set "pngtags=" & set "giftags="
 call:readini "%configpath%"
@@ -301,40 +309,45 @@ for /l %%z in (1,1,%2) do (
 call:waitrandom 500
 goto:createthread
 
+::%1 - png | jpg | gif
+::%2 - thread number
 :typelog
 if %thread% equ 1 exit /b
 if not defined typenum%1%2 set "typenum%1%2=1"
-call:typelogfile "%logfile%%1.%2" "typenum%1%2" %%typenum%1%2%% %1
+call:typelogfile "%logfile%%1.%2" "typenum%1%2" %1
+::call:typelogfile "%logfile%%1.%2" "typenum%1%2" %%typenum%1%2%% %1
 exit /b
 
+::%1 - log file name (%logfile%)
+::%2 - variable name - counter displayed files
+::%3 - png | jpg | gif
 :typelogfile
 if not exist "%~1" exit /b
-for /f "usebackq skip=%3 tokens=1-5 delims=;" %%b in ("%~1") do (
+set "tmpnum=!%~2!"
+for /f "usebackq skip=%tmpnum% tokens=1-5 delims=;" %%b in ("%~1") do (
 	if /i "%%d" equ "error" (
 		call:printfileerr "%%~b" "%%~c"
 	) else (
-		call:printfileinfo "%%~b" %%c %%d %%e %%f
+		call:printfileinfo "%%~b" %%c %%d %%e %%f %3
 	)
 	set /a "%~2+=1"
 )
 exit /b
 
+::%1 - file name
+::%2 - original size in byte
+::%3 - optimize size in byte
+::%4 - change (%2 - %3)
+::%5 - percent change (%4*100/%2)
+::%6 - png | jpg | gif
 :printfileinfo
 if "%~4" equ "0" (
 	>>"%filelisterr1%" echo.%~f1
 	exit /b
 )
 setlocal  
-set "fn=%~nx1                                        "
-set "xfnext=%~x1"
-set "xfnlen=0"
-set "xfnextlen=0"
-call:strlen fn xfnlen
-if %xfnlen% gtr 30 (
-	call:strlen xfnext xfnextlen
-	set /a "xfnextlen=30-!xfnextlen!-2"
-	call set "fn=%%fn:~,%xfnextlen%%%..%xfnext%"
-)
+set "fn="
+call:cropfilename fn %1 %TFN%
 set "origsize=%2"
 call:division origsize 1024 100
 set "origsize=          !origsize!"
@@ -345,10 +358,12 @@ set "change=%4"
 call:division change 1024 100
 set "change=          !change!"
 set "percent=          %5%%"
-echo. %fn:~,30%^|%origsize:~-11%^|%optsize:~-11%^|%change:~-10%^|%percent:~-10%
-endlocal
+echo. !fn:~,%TFN%!^|%origsize:~-11%^|%optsize:~-11%^|%change:~-10%^|%percent:~-10%
+endlocal & call:calcstep %6 %2 %3
 exit /b
 
+::%1 - file name
+::%2 - error message
 :printfileerr
 setlocal
 set "fn=%~nx1                                        "
@@ -356,6 +371,27 @@ set "errmsg=%~2"
 call:centerstring errmsg 45
 1>&2 echo. %fn:~,30%^|%errmsg%
 endlocal
+exit /b
+
+::%1 - variable containing file name
+::%2 - file name in %1
+::%3 - max length file name
+:cropfilename
+setlocal  
+set "xfn=%~nx2"
+set "xfnext=%~x2"
+set "xfnlen=0"
+set "xfnextlen=0"
+call:strlen xfn xfnlen
+call:strlen xfnext xfnextlen
+set /a "xfnextlen=%3-%xfnextlen%-2"
+if %xfnlen% gtr %3 (
+	call set "xfn=%%xfn:~,%xfnextlen%%%..%xfnext%"
+) else (
+	set "xfn=%xfn%                                        "
+	set "xfn=!xfn:~,%3!"
+)
+endlocal & set "%~1=%xfn%"
 exit /b
 
 :centerstring StrVar Length
@@ -744,8 +780,7 @@ exit /b 0
 ::%3 - thread number
 :savelog
 set /a "change=%~z1-%2"
-if %change% equ 0 (
-	call:saverrorlog %1 1 
+if %change% equ 0 call:saverrorlog %1 1
 set /a "perc=%change%*100/%2" 2>nul
 set /a "fract=%change%*100%%%2*100/%2" 2>nul
 set /a "perc=%perc%*100+%fract%"
@@ -770,7 +805,7 @@ exit /b
 
 ::%1 - variable name for division (dividend)
 ::%2 - divider
-::%3 - 10^(number of decimal places) - (100 - 2 decimal places, 1000 - 3 decimal places)
+::%3 - 10^(number of decimal places) - (100 - 2 decimal places, 1000 - 3 decimal places, 1 - no decimals places)
 :division
 set "sign="
 1>nul 2>&1 set /a "int=!%1!/%2"
@@ -787,14 +822,14 @@ set "fract=0"
 set "changePNG=0" & set "percPNG=0"
 set "changeJPG=0" & set "percJPG=0"
 set "changeGIF=0" & set "percGIF=0"
-set "TotalNumNOptJPG=0" & set "TotalNumNOptPNG=0" & set "TotalNumNOptGIF=0"
-set "stepJPG=0" & set "stepPNG=0" & set "stepGIF=0"
 if %jpeg% equ 0 if %png% equ 0 if %gif% equ 0 1>nul 2>&1 ping -n 1 -w 500 127.255.255.255 & goto:finmessage
-if %thread% gtr 1 (
-	for /f "tokens=1-5 delims=;" %%a in ('findstr /e /i /r /c:";ok" "%logfile%png*" ') do call:calcstep PNG %%b %%c
-	for /f "tokens=1-5 delims=;" %%a in ('findstr /e /i /r /c:";ok" "%logfile%jpg*" ') do call:calcstep JPG %%b %%c
-	for /f "tokens=1-5 delims=;" %%a in ('findstr /e /i /r /c:";ok" "%logfile%gif*" ') do call:calcstep GIF %%b %%c
-)
+::set "TotalNumNOptJPG=0" & set "TotalNumNOptPNG=0" & set "TotalNumNOptGIF=0"
+::set "stepJPG=0" & set "stepPNG=0" & set "stepGIF=0"
+::if %thread% gtr 1 (
+::	for /f "tokens=1-5 delims=;" %%a in ('findstr /e /i /r /c:";ok" "%logfile%png*" ') do call:calcstep PNG %%b %%c
+::	for /f "tokens=1-5 delims=;" %%a in ('findstr /e /i /r /c:";ok" "%logfile%jpg*" ') do call:calcstep JPG %%b %%c
+::	for /f "tokens=1-5 delims=;" %%a in ('findstr /e /i /r /c:";ok" "%logfile%gif*" ') do call:calcstep GIF %%b %%c
+::)
 for /f "tokens=1" %%a in ('findstr /e /i /r /c:";error" "%logfile%png*" 2^>nul ^| find /i /c ";error" 2^>nul') do (
 	set /a "TotalNumErrPNG+=%%a" & set /a "TotalNumPNG-=%%a"
 )
@@ -813,31 +848,37 @@ for /f "tokens=1" %%a in ('findstr /e /i /r /c:";0;0.00;ok" "%logfile%jpg*" 2^>n
 for /f "tokens=1" %%a in ('findstr /e /i /r /c:";0;0.00;ok" "%logfile%gif*" 2^>nul ^| find /i /c ";0;0.00;ok" 2^>nul') do (
 	set /a "TotalNumNOptGIF+=%%a"
 )
-set /a "changePNG=(%ImageSizePNG%-%TotalSizePNG%)" 2>nul
-set /a "percPNG=%changePNG%*100/%TotalSizePNG%" 2>nul
-set /a "fract=%changePNG%*100%%%TotalSizePNG%*100/%TotalSizePNG%" 2>nul
-set /a "percPNG=%percPNG%*100+%fract%" 2>nul
-::call:division changePNG 1024 100
-call:division percPNG 100 100
-set /a "changeJPG=(%ImageSizeJPG%-%TotalSizeJPG%)" 2>nul
-set /a "percJPG=%changeJPG%*100/%TotalSizeJPG%" 2>nul
-set /a "fract=%changeJPG%*100%%%TotalSizeJPG%*100/%TotalSizeJPG%" 2>nul
-set /a "percJPG=%percJPG%*100+%fract%" 2>nul
-::call:division changeJPG 1024 100
-call:division percJPG 100 100
-set /a "changeGIF=(%ImageSizeGIF%-%TotalSizeGIF%)" 2>nul
-set /a "percGIF=%changeGIF%*100/%TotalSizeGIF%" 2>nul
-set /a "fract=%changeGIF%*100%%%TotalSizeGIF%*100/%TotalSizeGIF%" 2>nul
-set /a "percGIF=%percGIF%*100+%fract%" 2>nul
-::call:division changeGIF 1024 100
-call:division percGIF 100 100
+call:fincalc PNG
+call:fincalc JPG
+call:fincalc GIF
+
+::set /a "STotalSizePNG+=%TotalSizePNG%/1024"
+::set /a "SImageSizePNG+=%ImageSizePNG%/1024"
+::set /a "changePNG=(%ImageSizePNG%-%TotalSizePNG%)" 2>nul
+::set /a "percPNG=%changePNG%*100/%TotalSizePNG%" 2>nul
+::set /a "fract=%changePNG%*100%%%TotalSizePNG%*100/%TotalSizePNG%" 2>nul
+::set /a "percPNG=%percPNG%*100+%fract%" 2>nul
+::::call:division changePNG 1024 100
+::call:division percPNG 100 100
+::set /a "changeJPG=(%ImageSizeJPG%-%TotalSizeJPG%)" 2>nul
+::set /a "percJPG=%changeJPG%*100/%TotalSizeJPG%" 2>nul
+::set /a "fract=%changeJPG%*100%%%TotalSizeJPG%*100/%TotalSizeJPG%" 2>nul
+::set /a "percJPG=%percJPG%*100+%fract%" 2>nul
+::::call:division changeJPG 1024 100
+::call:division percJPG 100 100
+::set /a "changeGIF=(%ImageSizeGIF%-%TotalSizeGIF%)" 2>nul
+::set /a "percGIF=%changeGIF%*100/%TotalSizeGIF%" 2>nul
+::set /a "fract=%changeGIF%*100%%%TotalSizeGIF%*100/%TotalSizeGIF%" 2>nul
+::set /a "percGIF=%percGIF%*100+%fract%" 2>nul
+::::call:division changeGIF 1024 100
+::call:division percGIF 100 100
 
 :finmessage
 call:totalmsg PNG %png%
 call:totalmsg JPG %jpeg%
 call:totalmsg GIF %gif%
-call:echostd " Started  at - %stime%"
-call:echostd " Finished at - %ftime%"
+echo. Started  at - %stime%
+echo. Finished at - %ftime%
 echo.
 echo.-------------------------------------------------------------------------------
 1>&2 call:listerrfiles
@@ -861,51 +902,61 @@ if exist "%tmppath%" 1>nul 2>&1 rd /s /q "%tmppath%"
 exit /b
 
 ::%1 - JPG|PNG|GIF
+:fincalc
+set /a "STotalSize%~1+=!TotalSize%~1!/!step%~1!"
+set /a "SImageSize%~1+=!ImageSize%~1!/!step%~1!"
+set /a "change%~1=(!SImageSize%~1!-!STotalSize%~1!)" 2>nul
+set /a "perc%~1=!change%~1!*100/!STotalSize%~1!" 2>nul
+set /a "fract=!change%~1!*100%%!STotalSize%~1!*100/!STotalSize%~1!" 2>nul
+set /a "perc%~1=!perc%~1!*100+%fract%" 2>nul
+::call:division change%~1 1024 100
+call:division perc%~1 100 100
+exit /b
+
+::%1 - JPG|PNG|GIF
 ::%2 - Total Size
 ::%3 - Image Size
 :calcstep
-call set "total=%%TotalSize%1%%"
-call set "img=%%ImageSize%1%%"
-set "steping=0"
-if %total% geq 1000000 set /a "steping+=1"
-if %img% geq 1000000 set /a "steping+=1"
-if %steping% gtr 0 (
-	call set /a "TotalSize%1=%%TotalSize%1%%/1024"
-	call set /a "ImageSize%1=%%ImageSize%1%%/1024"
-	call set /a "step%1+=1"
-)
-set "total=%2"
-set "img=%3"
-call set "steping=%%step%1%%"
-for /l %%f in (1,1,%steping%) do set /a "total/=1024" & set /a "img/=1024"
-call set /a "TotalSize%1+=%total%"
-call set /a "ImageSize%1+=%img%"
+set /a "TotalSize%~1+=%~2"
+set /a "ImageSize%~1+=%~2"
+if !TotalSize%~1! lss %BYTECONV% if !ImageSize%~1! lss %BYTECONV% exit /b
+set /a "STotalSize%~1+=!TotalSize%~1!/!step%~1!"
+set /a "SImageSize%~1+=!ImageSize%~1!/!step%~1!"
+set "TotalSize%~1=0"
+set "ImageSize%~1=0"
+if !STotalSize%~1! lss %BYTECONV% if !SImageSize%~1! lss %BYTECONV% exit /b
+set /a "step%~1*=10"
+set /a "STotalSize%~1/=10"
+set /a "SImageSize%~1/=10"
 exit /b
 
 :totalmsg
-call set /a "tt=%%TotalNum%1%%+%%TotalNumErr%1%%"
-if "%2" equ "0" (
+set /a "tt=!TotalNum%~1!+!TotalNumErr%~1!"
+if "%tt%" equ "0" exit /b
+if "%~2" equ "0" (
 	set "opt=0"
 	set "tterr=%tt%"
 	set "nopt=0"
 ) else (
-	call set "nopt=%%TotalNumNOpt%1%%"
-	call set /a "opt=%%TotalNum%1%%-!nopt!"
-	call set "tterr=%%TotalNumErr%1%%"
+	set "nopt=!TotalNumNOpt%~1!"
+	set /a "opt=!TotalNum%~1!-!nopt!"
+	set "tterr=!TotalNumErr%~1!"
 )
-if "%tt%" neq "0" (
-	call:echostd " Total Number of %1:	%tt%"
-	call:echostd " Optimized %1:		%opt%"
-	if "%nopt%" neq "0" call:echostd " Not optimized %1:	%nopt%"
-	if "%tterr%" neq "0" call:echostd " Skipped %1:		%tterr%"
-	set "steping=0"
-	call set "stepcur=%%step%1%%"
-	for %%a in (byte KB MB GB TB) do (
-		if !steping! equ !stepcur! call:echostd " Total %1:  		%%change%1%% %%a, %%perc%1%%%%%%"
-		set /a "steping+=1"
-	)
-	call:echostd
-)
+echo. Total Number of %1:	%tt%
+echo. Optimized %1:		%opt%
+if "%nopt%" neq "0" echo. Not optimized %1:	%nopt%
+if "%tterr%" neq "0" echo. Skipped %1:		%tterr%
+set "stepcur=!step%~1!"
+set "stepm=1"
+for %%a in (KB KB KB MB MB MB GB GB GB TB TB TB) do (
+	set /a "stepcur/=10"
+	set /a "stepm=stepm*10%%1000"
+	if !stepm! equ 0 set "stepm=1"
+	if !stepcur! equ 1 (
+		call:division change%~1 1 !stepm!
+		echo. Total %1:  		!change%~1! %%a, !perc%~1!%%
+))
+echo.
 exit /b
 
 :listerrfiles
