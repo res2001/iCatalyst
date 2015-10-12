@@ -820,6 +820,7 @@ for %%b in ("%filelisterr%2" "%filelisterr%3") do (
 )
 set /a "TotalNumNOpt=TotalNumNOptPNG+TotalNumNOptJPG+TotalNumNOptGIF"
 if %TotalNumNOpt% gtr 0 (
+	echo.
 	echo.                         Images are already optimized
 	echo.-------------------------------------------------------------------------------
 	type %filelisterr%1
@@ -830,6 +831,7 @@ if %TotalNumErr% gtr 0 (
 	set "isfirst="
 	for %%a in ("%filelisterr%2*") do (
 		if not defined isfirst (
+			echo.
 			echo.                           Images are not supported
 			echo.-------------------------------------------------------------------------------
 			set "isfirst=1"
@@ -840,6 +842,7 @@ if %TotalNumErr% gtr 0 (
 	set "isfirst="
 	for %%a in ("%filelisterr%3*") do (
 		if not defined isfirst (
+			echo.
 			echo.                             Images are not found
 			echo.-------------------------------------------------------------------------------
 			set "isfirst=1"
@@ -849,6 +852,7 @@ if %TotalNumErr% gtr 0 (
 	if defined isfirst echo.-------------------------------------------------------------------------------
 )
 for %%a in ("%filelisterr%") do if %%~za gtr 0 (
+	echo.
 	echo.                            Images with characters
 	echo.-------------------------------------------------------------------------------
 	type "%%~a"
@@ -919,6 +923,7 @@ exit /b
 set /a "tt=!TotalNum%~1!-!TotalNumNOpt%~1!"
 if %tt% equ 0 exit /b
 if not defined isfirst (
+	echo.
 	echo.                                     Total
 	echo.-------------------------------------------------------------------------------
 	set "isfirst=1"
@@ -964,8 +969,8 @@ title [Manual] %name% %version%
 	echo. Options:
 	echo.
 	echo. /png:#	Optimization settings PNG ^(Non-Interlaced^):
-	echo.	1 - Compression level - Xtreme
-	echo.	2 - Compression level - Advanced
+	echo.	1 - Compression level - Advanced
+	echo.	2 - Compression level - Xtreme
 	echo.	0 - Skip ^(default^)
 	echo.
 	echo. /jpg:#	Optimization settings JPEG:
