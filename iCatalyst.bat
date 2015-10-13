@@ -947,8 +947,7 @@ for %%a in (KB KB KB MB MB MB GB GB GB TB TB TB) do (
 		set "F4=           !change%~1!"
 		echo. !F1:~,%TFN%!^|!F2:~-9!%%~a^|!F3:~-9!%%~a^|!F4:~-8!%%~a^|%F5:~-9%%%
 		exit /b
-	)
-)
+))
 exit /b
 
 :readini
