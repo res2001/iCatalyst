@@ -200,10 +200,10 @@ for /l %%a in (1,1,%thread%) do (
 	>"%logfile%gif.%%a" echo.
 )
 cls
-echo.------------------------------------------------------------------------------
+echo.-------------------------------------------------------------------------------
 echo. File Name                    ^| Original  ^| Optimized ^| Savings, ^| %% Savings
 echo.                              ^| Size, KB  ^| Size, KB  ^| KB       ^|
-echo.------------------------------------------------------------------------------
+echo.-------------------------------------------------------------------------------
 if /i "%updatecheck%" equ "true" start "" /b cmd.exe /c ""%fullname%" updateic"
 call:setitle
 call:setvtime stime
@@ -221,7 +221,7 @@ for /l %%z in (1,1,%thread%) do (
 	call:typelog jpg %%z
 	call:typelog gif %%z
 )
-echo.------------------------------------------------------------------------------
+echo.-------------------------------------------------------------------------------
 call:setitle
 call:end
 call:dopause & exit /b
@@ -340,13 +340,13 @@ setlocal
 set "fn="
 call:cropfilename fn %1 %TFN%
 set "origsize=%2"
-call:division origsize 1024 100
+call:division origsize 1000 100
 set "origsize=          !origsize!"
 set "optsize=%3"
-call:division optsize 1024 100
+call:division optsize 1000 100
 set "optsize=          !optsize!"
 set "change=%4"
-call:division change 1024 100
+call:division change 1000 100
 set "change=          !change!"
 set "percent=          %5%%"
 echo. !fn:~,%TFN%!^|%origsize:~-11%^|%optsize:~-11%^|%change:~-10%^|%percent:~-10%
@@ -893,6 +893,7 @@ exit /b
 
 ::%1 - JPG|PNG|GIF
 :fincalc
+if !step%~1! equ 1 set "step%~1=10"
 set /a "STotalSize%~1+=!TotalSize%~1!/!step%~1!"
 set /a "SImageSize%~1+=!ImageSize%~1!/!step%~1!"
 set /a "change%~1=(!SImageSize%~1!-!STotalSize%~1!)" 2>nul
@@ -946,7 +947,8 @@ for %%a in (KB KB KB MB MB MB GB GB GB TB TB TB) do (
 		set "F4=           !change%~1!"
 		echo. !F1:~,%TFN%!^|!F2:~-9!%%~a^|!F3:~-9!%%~a^|!F4:~-8!%%~a^|%F5:~-9%%%
 		exit /b
-))
+	)
+)
 exit /b
 
 :readini
