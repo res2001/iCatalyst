@@ -546,7 +546,7 @@ if %png% gtr 0  (
 if %jpeg% gtr 0 (
 	set /a "perc=%ImageNumJPG%*100/%TotalNumJPG%"
 	if %png% gtr 0 set "titlestr=%titlestr% ^| "
-	set "titlestr=!titlestr!JPEG %jpegtitle%: !perc!%%"
+	set "titlestr=!titlestr!JPG %jpegtitle%: !perc!%%"
 )
 if %gif% gtr 0 (
 	set /a "perc=%ImageNumGIF%*100/%TotalNumGIF%"
