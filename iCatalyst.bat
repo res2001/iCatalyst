@@ -985,8 +985,8 @@ title [Manual] %name% %version%
 	echo.	0 - Skip ^(default^)
 	echo.
 	echo. "/outdir:#" Settings save optimized images:
-	echo.	true  - replace the original image on optimized
-	echo.	false - open dialog box for saving images ^(default^)
+	echo.	true  - open dialog box for saving images ^(default^)
+	echo.	false - replace the original image on optimized
 	echo.	"full path to folder" - specify the folder to save images.
 	echo.	for example: "/outdir:C:\temp", if the destination folder does not 
 	echo.	exist, it will be created automatically.
