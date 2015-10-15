@@ -22,11 +22,11 @@ call:runic "%name% %version%"
 if defined runic (
 	cls
 	title [Waiting] %name% %version%
-	1>&2 echo.-----------------------------------------------------------------------------
+	1>&2 echo.-------------------------------------------------------------------------------
 	1>&2 echo. Attention: running %runic% of %name%.
 	1>&2 echo.
 	1>&2 echo. Press Enter to continue.
-	1>&2 echo.-----------------------------------------------------------------------------
+	1>&2 echo.-------------------------------------------------------------------------------
 	1>nul pause
 	cls
 )
@@ -62,13 +62,13 @@ if defined nofile (
 	cls
 	title [Error] %name% %version%
 	if exist "%tmppath%" 1>nul 2>&1 rd /s /q "%tmppath%"
-	1>&2 echo.-----------------------------------------------------------------------------
+	1>&2 echo.-------------------------------------------------------------------------------
 	1>&2 echo. Application can not get access to files:
 	1>&2 echo.
 	for %%j in (%nofile%) do 1>&2 echo. - %%~j
 	1>&2 echo.
 	1>&2 echo. Check access to files and try again.
-	1>&2 echo.-----------------------------------------------------------------------------
+	1>&2 echo.-------------------------------------------------------------------------------
 	call:dopause & exit /b
 )
 
@@ -133,7 +133,7 @@ if defined perr (
 	cls
 	title [Error] %name% %version%
 	if exist "%tmppath%" 1>nul 2>&1 rd /s /q "%tmppath%"
-	1>&2 echo.-----------------------------------------------------------------------------
+	1>&2 echo.-------------------------------------------------------------------------------
 	1>&2 echo. Unknown value of setting %perr%.
 	call:helpmsg & exit /b
 )
@@ -162,9 +162,9 @@ if defined outdir (
 )
 cls
 title [Loading] %name% %version%
-echo.-----------------------------------------------------------------------------
+echo.-------------------------------------------------------------------------------
 echo. Loading. Please wait...
-echo.-----------------------------------------------------------------------------
+echo.-------------------------------------------------------------------------------
 cscript //nologo //E:JScript "%scripts%filter.js" %oparam% %outdirparam% %* 1>"%filelist%" 2>"%filelisterr%"
 
 :setcounters
@@ -189,7 +189,7 @@ if exist "%filelisterr%" (
 :endsetcounters
 if %TotalNumPNG% equ 0 if %TotalNumJPG% equ 0 if %TotalNumGIF% equ 0 (
 	cls
-	1>&2 echo.-----------------------------------------------------------------------------
+	1>&2 echo.-------------------------------------------------------------------------------
 	1>&2 echo. Images not found. Please check images and try again.
 	call:helpmsg
 	exit /b
@@ -200,10 +200,10 @@ for /l %%a in (1,1,%thread%) do (
 	>"%logfile%gif.%%a" echo.
 )
 cls
-echo.-----------------------------------------------------------------------------
-echo. File Name                      ^| Original  ^| Optimized ^| Savings, ^|%% Savings
+echo.-------------------------------------------------------------------------------
+echo. File Name                      ^| Original  ^| Optimized ^| Savings, ^| %% Savings
 echo.                                ^| Size, KB  ^| Size, KB  ^| KB       ^|
-echo.-----------------------------------------------------------------------------
+echo.-------------------------------------------------------------------------------
 if /i "%updatecheck%" equ "true" start "" /b cmd.exe /c ""%fullname%" updateic"
 call:setitle
 call:setvtime stime
@@ -221,7 +221,7 @@ for /l %%z in (1,1,%thread%) do (
 	call:typelog jpg %%z
 	call:typelog gif %%z
 )
-echo.-----------------------------------------------------------------------------
+echo.-------------------------------------------------------------------------------
 call:setitle
 call:end
 call:dopause & exit /b
@@ -349,7 +349,7 @@ set "change=%4"
 call:division change 1000 100
 set "change=          !change!"
 set "percent=          %5%%"
-echo. !fn:~,%TFN%!^|%origsize:~-11%^|%optsize:~-11%^|%change:~-10%^|%percent:~-9%
+echo. !fn:~,%TFN%!^|%origsize:~-11%^|%optsize:~-11%^|%change:~-10%^|%percent:~-10%
 endlocal
 exit /b
 
@@ -822,9 +822,9 @@ set /a "TotalNumNOpt=TotalNumNOptPNG+TotalNumNOptJPG+TotalNumNOptGIF"
 if %TotalNumNOpt% gtr 0 (
 	echo.
 	echo.                         Images are already optimized
-	echo.-----------------------------------------------------------------------------
+	echo.-------------------------------------------------------------------------------
 	type %filelisterr%1
-	echo.-----------------------------------------------------------------------------
+	echo.-------------------------------------------------------------------------------
 )
 set /a "TotalNumErr=TotalNumErrPNG+TotalNumErrJPG+TotalNumErrGIF"
 if %TotalNumErr% gtr 0 (
@@ -833,30 +833,30 @@ if %TotalNumErr% gtr 0 (
 		if not defined isfirst (
 			echo.
 			echo.                           Images are not supported
-			echo.-----------------------------------------------------------------------------
+			echo.-------------------------------------------------------------------------------
 			set "isfirst=1"
 		)
 		type "%%~a"
 	)
-	if defined isfirst echo.-----------------------------------------------------------------------------
+	if defined isfirst echo.-------------------------------------------------------------------------------
 	set "isfirst="
 	for %%a in ("%filelisterr%3*") do (
 		if not defined isfirst (
 			echo.
 			echo.                             Images are not found
-			echo.-----------------------------------------------------------------------------
+			echo.-------------------------------------------------------------------------------
 			set "isfirst=1"
 		)
 		type "%%~a"
 	)
-	if defined isfirst echo.-----------------------------------------------------------------------------
+	if defined isfirst echo.-------------------------------------------------------------------------------
 )
 for %%a in ("%filelisterr%") do if %%~za gtr 0 (
 	echo.
 	echo.                            Images with characters
-	echo.-----------------------------------------------------------------------------
+	echo.-------------------------------------------------------------------------------
 	type "%%~a"
-	echo.-----------------------------------------------------------------------------
+	echo.-------------------------------------------------------------------------------
 )
 set "isfirst="
 call:fincalc PNG
@@ -866,14 +866,12 @@ call:fincalc GIF
 call:totalmsg PNG %png%
 call:totalmsg JPG %jpeg%
 call:totalmsg GIF %gif%
-if defined isfirst echo.-----------------------------------------------------------------------------
+echo.
 if defined outdir (echo. Outdir: %outdir%) else echo. Outdir: overwrite original images
 echo.
 echo. Started  at - %stime%
 echo. Finished at - %ftime%
-echo.-----------------------------------------------------------------------------
-echo. Image optimization is completed.
-echo.-----------------------------------------------------------------------------
+echo.-------------------------------------------------------------------------------
 if /i "%updatecheck%" equ "true" (
 	call:waitflag "%iculck%"
 	1>nul 2>&1 del /f /q "%iculck%"
@@ -881,7 +879,7 @@ if /i "%updatecheck%" equ "true" (
 		call:readini "%iculog%"
 		if "%version%" neq "!ver!" (
 			echo. New version available %name% !ver!.
-			echo.-----------------------------------------------------------------------------
+			echo.-------------------------------------------------------------------------------
 			start "" !url!
 		)
 		1>nul 2>&1 del /f /q "%iculog%"
@@ -935,7 +933,7 @@ if %~2 equ 0 (
 if not defined isfirst (
 	echo.
 	echo.                                     Total
-	echo.-----------------------------------------------------------------------------
+	echo.-------------------------------------------------------------------------------
 	set "isfirst=1"
 )
 set "stepcur=!step%~1!"
@@ -954,7 +952,8 @@ for %%a in (KB KB KB MB MB MB GB GB GB TB TB TB) do (
 		set "F2=           !STotalSize%~1!"
 		set "F3=           !SImageSize%~1!"
 		set "F4=           !change%~1!"
-		echo. !F1:~,%TFN%!^|!F2:~-9!%%~a^|!F3:~-9!%%~a^|!F4:~-8!%%~a^|%F5:~-8%%%
+		echo. !F1:~,%TFN%!^|!F2:~-9!%%~a^|!F3:~-9!%%~a^|!F4:~-8!%%~a^|%F5:~-9%%%
+		echo.-------------------------------------------------------------------------------
 		exit /b
 ))
 exit /b
@@ -969,7 +968,7 @@ exit /b
 :helpmsg
 title [Manual] %name% %version%
 1>&2 (
-	echo.-----------------------------------------------------------------------------
+	echo.-------------------------------------------------------------------------------
 	echo. Image Catalyst - optimization / compression images PNG, JPEG and GIF lossless
 	echo.
 	echo. Recommended to examine ReadMe
@@ -1010,7 +1009,7 @@ title [Manual] %name% %version%
 	echo. Examples:
 	echo. call iCatalyst.bat /gif:1 "/outdir:C:\photos" "C:\images"
 	echo. call iCatalyst.bat /png:2 /jpg:2 "/outdir:true" "C:\images"
-	echo.-----------------------------------------------------------------------------
+	echo.-------------------------------------------------------------------------------
 )
 if exist "%tmppath%" 1>nul 2>&1 rd /s /q "%tmppath%"
 call:dopause & exit /b
