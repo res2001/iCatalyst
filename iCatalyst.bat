@@ -17,16 +17,17 @@ set "tmppath=%TEMP%\iCatalyst\"
 set "errortimewait=30"
 set "iclock=%TEMP%ic.lck"
 set "LOG=%scrpath%\iCatalyst"
+set "spacebar=-------------------------------------------------------------------------------"
 set "runic="
 call:runic "%name% %version%"
 if defined runic (
 	cls
 	title [Waiting] %name% %version%
-	1>&2 echo.-------------------------------------------------------------------------------
+	1>&2 echo.%spacebar%
 	1>&2 echo. Attention: running %runic% of %name%.
 	1>&2 echo.
 	1>&2 echo. Press Enter to continue.
-	1>&2 echo.-------------------------------------------------------------------------------
+	1>&2 echo.%spacebar%
 	1>nul pause
 	cls
 )
@@ -62,13 +63,13 @@ if defined nofile (
 	cls
 	title [Error] %name% %version%
 	if exist "%tmppath%" 1>nul 2>&1 rd /s /q "%tmppath%"
-	1>&2 echo.-------------------------------------------------------------------------------
+	1>&2 echo.%spacebar%
 	1>&2 echo. Application can not get access to files:
 	1>&2 echo.
 	for %%j in (%nofile%) do 1>&2 echo. - %%~j
 	1>&2 echo.
 	1>&2 echo. Check access to files and try again.
-	1>&2 echo.-------------------------------------------------------------------------------
+	1>&2 echo.%spacebar%
 	call:dopause & exit /b
 )
 
@@ -133,7 +134,7 @@ if defined perr (
 	cls
 	title [Error] %name% %version%
 	if exist "%tmppath%" 1>nul 2>&1 rd /s /q "%tmppath%"
-	1>&2 echo.-------------------------------------------------------------------------------
+	1>&2 echo.%spacebar%
 	1>&2 echo. Unknown value of setting %perr%.
 	call:helpmsg & exit /b
 )
@@ -162,9 +163,9 @@ if defined outdir (
 )
 cls
 title [Loading] %name% %version%
-echo.-------------------------------------------------------------------------------
+echo.%spacebar%
 echo. Loading. Please wait...
-echo.-------------------------------------------------------------------------------
+echo.%spacebar%
 cscript //nologo //E:JScript "%scripts%filter.js" %oparam% %outdirparam% %* 1>"%filelist%" 2>"%filelisterr%"
 
 :setcounters
@@ -189,7 +190,7 @@ if exist "%filelisterr%" (
 :endsetcounters
 if %TotalNumPNG% equ 0 if %TotalNumJPG% equ 0 if %TotalNumGIF% equ 0 (
 	cls
-	1>&2 echo.-------------------------------------------------------------------------------
+	1>&2 echo.%spacebar%
 	1>&2 echo. Images not found. Please check images and try again.
 	call:helpmsg
 	exit /b
@@ -200,10 +201,10 @@ for /l %%a in (1,1,%thread%) do (
 	>"%logfile%gif.%%a" echo.
 )
 cls
-echo.-------------------------------------------------------------------------------
+echo.%spacebar%
 echo. File Name                      ^| Original  ^| Optimized ^| Savings, ^| %% Savings
 echo.                                ^| Size, KB  ^| Size, KB  ^| KB       ^|
-echo.-------------------------------------------------------------------------------
+echo.%spacebar%
 if /i "%updatecheck%" equ "true" start "" /b cmd.exe /c ""%fullname%" updateic"
 call:setitle
 call:setvtime stime
@@ -221,7 +222,7 @@ for /l %%z in (1,1,%thread%) do (
 	call:typelog jpg %%z
 	call:typelog gif %%z
 )
-echo.-------------------------------------------------------------------------------
+echo.%spacebar%
 call:setitle
 call:end
 call:dopause & exit /b
@@ -788,14 +789,29 @@ exit /b
 ::%1 - variable name for division (dividend)
 ::%2 - divider
 ::%3 - 10^(number of decimal places) - (100 - 2 decimal places, 1000 - 3 decimal places, 1 - no decimals places)
+::Return: float value with %3 decimal places: %1=!%1!/%2
 :division
 set "sign="
 1>nul 2>&1 set /a "int=!%1!/%2"
-1>nul 2>&1 set /a "fractd=!%1!*%3/%2%%%3"
+::1>nul 2>&1 set /a "fractd=!%1!*%3/%2%%%3"
+1>nul 2>&1 set /a "fractd=!%1!%%%2*%3/%2"
 if "%fractd:~,1%" equ "-" (set "sign=-" & set "fractd=%fractd:~1%")
 1>nul 2>&1 set /a "fractd=%3+%fractd%"
 if "%int:~,1%" equ "-" set "sign="
 set "%1=%sign%%int%.%fractd:~1%"
+exit /b
+
+::%1 - variable name for division (dividend)
+::%2 - divider
+::%3 - 10^(number of decimal places) - (100 - 2 decimal places, 1000 - 3 decimal places, 1 - no decimals places)
+::Return: integer value: %1=!%1!/%2*%3
+:division2
+setlocal
+1>nul 2>&1 set /a "int=!%1!/%2"
+1>nul 2>&1 set /a "fractd=!%1!%%%2*%3/%2"
+if "%fractd:~,1%" equ "-" (set "fractd=%fractd:~1%")
+1>nul 2>&1 set /a "fractd=%3+%fractd%"
+endlocal & set "%1=%int%%fractd:~1%"
 exit /b
 
 :end
@@ -822,9 +838,9 @@ set /a "TotalNumNOpt=TotalNumNOptPNG+TotalNumNOptJPG+TotalNumNOptGIF"
 if %TotalNumNOpt% gtr 0 (
 	echo.
 	echo.                         Images are already optimized
-	echo.-------------------------------------------------------------------------------
+	echo.%spacebar%
 	type %filelisterr%1
-	echo.-------------------------------------------------------------------------------
+	echo.%spacebar%
 )
 set /a "TotalNumErr=TotalNumErrPNG+TotalNumErrJPG+TotalNumErrGIF"
 if %TotalNumErr% gtr 0 (
@@ -833,30 +849,30 @@ if %TotalNumErr% gtr 0 (
 		if not defined isfirst (
 			echo.
 			echo.                           Images are not supported
-			echo.-------------------------------------------------------------------------------
+			echo.%spacebar%
 			set "isfirst=1"
 		)
 		type "%%~a"
 	)
-	if defined isfirst echo.-------------------------------------------------------------------------------
+	if defined isfirst echo.%spacebar%
 	set "isfirst="
 	for %%a in ("%filelisterr%3*") do (
 		if not defined isfirst (
 			echo.
 			echo.                             Images are not found
-			echo.-------------------------------------------------------------------------------
+			echo.%spacebar%
 			set "isfirst=1"
 		)
 		type "%%~a"
 	)
-	if defined isfirst echo.-------------------------------------------------------------------------------
+	if defined isfirst echo.%spacebar%
 )
 for %%a in ("%filelisterr%") do if %%~za gtr 0 (
 	echo.
 	echo.                            Images with characters
-	echo.-------------------------------------------------------------------------------
+	echo.%spacebar%
 	type "%%~a"
-	echo.-------------------------------------------------------------------------------
+	echo.%spacebar%
 )
 set "isfirst="
 call:fincalc PNG
@@ -871,7 +887,7 @@ if defined outdir (echo. Outdir: %outdir%) else echo. Outdir: overwrite original
 echo.
 echo. Started  at - %stime%
 echo. Finished at - %ftime%
-echo.-------------------------------------------------------------------------------
+echo.%spacebar%
 if /i "%updatecheck%" equ "true" (
 	call:waitflag "%iculck%"
 	1>nul 2>&1 del /f /q "%iculck%"
@@ -879,7 +895,7 @@ if /i "%updatecheck%" equ "true" (
 		call:readini "%iculog%"
 		if "%version%" neq "!ver!" (
 			echo. New version available %name% !ver!.
-			echo.-------------------------------------------------------------------------------
+			echo.%spacebar%
 			start "" !url!
 		)
 		1>nul 2>&1 del /f /q "%iculog%"
@@ -933,7 +949,7 @@ if %~2 equ 0 (
 if not defined isfirst (
 	echo.
 	echo.                                     Total
-	echo.-------------------------------------------------------------------------------
+	echo.%spacebar%
 	set "isfirst=1"
 )
 set "stepcur=!step%~1!"
@@ -953,7 +969,7 @@ for %%a in (KB KB KB MB MB MB GB GB GB TB TB TB) do (
 		set "F3=           !SImageSize%~1!"
 		set "F4=           !change%~1!"
 		echo. !F1:~,%TFN%!^|!F2:~-9!%%~a^|!F3:~-9!%%~a^|!F4:~-8!%%~a^|%F5:~-9%%%
-		echo.-------------------------------------------------------------------------------
+		echo.%spacebar%
 		exit /b
 ))
 exit /b
@@ -968,7 +984,7 @@ exit /b
 :helpmsg
 title [Manual] %name% %version%
 1>&2 (
-	echo.-------------------------------------------------------------------------------
+	echo.%spacebar%
 	echo. Image Catalyst - optimization / compression images PNG, JPEG and GIF lossless
 	echo.
 	echo. Recommended to examine ReadMe
@@ -1009,7 +1025,7 @@ title [Manual] %name% %version%
 	echo. Examples:
 	echo. call iCatalyst.bat /gif:1 "/outdir:C:\photos" "C:\images"
 	echo. call iCatalyst.bat /png:2 /jpg:2 "/outdir:true" "C:\images"
-	echo.-------------------------------------------------------------------------------
+	echo.%spacebar%
 )
 if exist "%tmppath%" 1>nul 2>&1 rd /s /q "%tmppath%"
 call:dopause & exit /b
