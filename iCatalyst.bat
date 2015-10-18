@@ -1066,6 +1066,6 @@ endlocal & exit /b
 :clearscreen
 setlocal
 set "x=%~f0"
-echo.%CMDCMDLINE% | 1>nul 2>&1 findstr /vilc:"%x%" && cls
+echo.%CMDCMDLINE% | 1>nul 2>&1 findstr /ilc:"%x%" && cls
 set "x="
 endlocal & exit /b
