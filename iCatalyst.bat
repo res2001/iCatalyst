@@ -123,6 +123,9 @@ set "filelisterr=%tmppath%\filerr"
 set "TFN=31"
 ::restrictions in bytes (default - 100Mb)
 set "BYTECONV=104857600"
+set "KB=1024"
+set /a "MB=KB*KB"
+set /a "GB=MB*KB"
 
 set "thread=" & set "updatecheck=" & set "outdir=" & set "nooutfolder="
 set "jpegtags=" & set "xtreme=" & set "advanced=" & set "pngtags=" & set "giftags="
@@ -204,8 +207,8 @@ for /l %%a in (1,1,%thread%) do (
 )
 call:clearscreen
 echo.%spacebar%
-echo. File Name                      ^| Original  ^| Optimized ^| Savings, ^| %% Savings
-echo.                                ^| Size, KB  ^| Size, KB  ^| KB       ^|
+echo. File Name                      ^| Original  ^| Optimized ^| Savings  ^| %% Savings
+echo.                                ^|   Size    ^|   Size    ^|          ^|
 echo.%spacebar%
 if /i "%updatecheck%" equ "true" start "" /b cmd.exe /c ""%fullname%" updateic"
 call:setitle
@@ -341,19 +344,29 @@ exit /b
 :printfileinfo
 setlocal  
 set "fn="
-call:cropfilename fn %1 %TFN%
-set "origsize=%2"
-call:division origsize 1024 100
-set "origsize=          !origsize!"
-set "optsize=%3"
-call:division optsize 1024 100
-set "optsize=          !optsize!"
-set "change=%4"
-call:division change 1024 100
-set "change=          !change!"
+call:cropfilename fn "%~1" %TFN%
+set "origsize=%~2"
+call:prepsize origsize
+set "origsize=          %origsize%"
+set "optsize=%~3"
+call:prepsize optsize
+set "optsize=          %optsize%"
+set "change=%~4"
+set "sign="
+if %change% lss 0 (set "sign=-" & set "change=%change:~1%")
+call:prepsize change
+set "change=           %sign%%change%"
 set "percent=          %5%%"
 echo. !fn:~,%TFN%!^|%origsize:~-11%^|%optsize:~-11%^|%change:~-10%^|%percent:~-10%
 endlocal
+exit /b
+
+::%1 - variable name
+:prepsize
+if !%~1! geq %GB% (call:division %~1 %GB% 100 & set "%~1=!%~1!GB" & exit /b)
+if !%~1! geq %MB% (call:division %~1 %MB% 100 & set "%~1=!%~1!MB" & exit /b)
+if !%~1! geq %KB% (call:division %~1 %KB% 100 & set "%~1=!%~1!KB" & exit /b)
+set "%~1=!%~1!byte"
 exit /b
 
 ::%1 - file name
