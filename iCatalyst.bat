@@ -185,11 +185,11 @@ if %TotalNumPNG% gtr 0 (if not defined png call:png) else set "png=0"
 if %TotalNumJPG% gtr 0 (if not defined jpeg call:jpeg) else set "jpeg=0"
 if %TotalNumGIF% gtr 0 (if not defined gif call:gif) else set "gif=0"
 if exist "%filelisterr%" (
-	if defined png  for /f "tokens=3 delims=:" %%a in ('findstr /i /e ".png"  "%filelisterr%" ^| find /i /c ".png" 2^>nul') do set /a "TotalNumErrPNG+=%%a"
-	if defined jpeg for /f "tokens=3 delims=:" %%a in ('findstr /i /e ".jpg"  "%filelisterr%" ^| find /i /c ".jpg" 2^>nul') do set /a "TotalNumErrJPG+=%%a"
-	if defined jpeg for /f "tokens=3 delims=:" %%a in ('findstr /i /e ".jpe"  "%filelisterr%" ^| find /i /c ".jpe" 2^>nul') do set /a "TotalNumErrJPG+=%%a"
-	if defined jpeg for /f "tokens=3 delims=:" %%a in ('findstr /i /e ".jpeg" "%filelisterr%" ^| find /i /c ".jpeg" 2^>nul') do set /a "TotalNumErrJPG+=%%a"
-	if defined gif  for /f "tokens=3 delims=:" %%a in ('findstr /i /e ".gif"  "%filelisterr%" ^| find /i /c ".gif" 2^>nul') do set /a "TotalNumErrGIF+=%%a"
+	if defined png  for /f "tokens=* delims=" %%a in ('findstr /i /e ".png"  "%filelisterr%" ^| find /i /c ".png" 2^>nul') do set /a "TotalNumErrPNG+=%%a"
+	if defined jpeg for /f "tokens=* delims=" %%a in ('findstr /i /e ".jpg"  "%filelisterr%" ^| find /i /c ".jpg" 2^>nul') do set /a "TotalNumErrJPG+=%%a"
+	if defined jpeg for /f "tokens=* delims=" %%a in ('findstr /i /e ".jpe"  "%filelisterr%" ^| find /i /c ".jpe" 2^>nul') do set /a "TotalNumErrJPG+=%%a"
+	if defined jpeg for /f "tokens=* delims=" %%a in ('findstr /i /e ".jpeg" "%filelisterr%" ^| find /i /c ".jpeg" 2^>nul') do set /a "TotalNumErrJPG+=%%a"
+	if defined gif  for /f "tokens=* delims=" %%a in ('findstr /i /e ".gif"  "%filelisterr%" ^| find /i /c ".gif" 2^>nul') do set /a "TotalNumErrGIF+=%%a"
 )
 
 :endsetcounters
@@ -321,10 +321,7 @@ if not defined typenum%~1%~2 set "typenum%~1%~2=1"
 if not exist "%logfile%%1.%2" exit /b
 set "tmpskip=!typenum%~1%~2!"
 for /f "usebackq skip=%tmpskip% tokens=1-5 delims=;" %%b in ("%logfile%%1.%2") do (
-	if /i "%%d" equ "error" (
-		set /a "TotalNumErr%~1+=1"
-		call:printfileerr "%%~b" "%%~c"
-	) else if %%~e equ 0 (
+	if %%~e equ 0 (
 		set /a "TotalNumNOpt%~1+=1"
 		>>"%filelisterr%1" echo. %%~fb
 	) else  (
@@ -599,38 +596,38 @@ set "logfile2=%logfile%png.%1"
 set "pnglog=%tmppath%\png%1.log"
 set "filework=%tmppath%\%~n2-ic%1%~x2"
 if not exist "%~2" (
-	call:saverrorlog "%~f2" 3 %~1
+	call:saverrorlog "%~f2" 3 %~1 PNG
 	exit /b 1
 )
 if %png% equ 2 (
 	>"%pnglog%" 2>nul truepng -y -i0 -zw7 -zc7 -zm5-9 -zs0-3 -f0,5 -fs:2 %xtreme% -force -out "%filework%" "%~2"
-	if errorlevel 1 (call:saverrorlog "%~f2" 2 %~1 & goto:pngfwe)
+	if errorlevel 1 (call:saverrorlog "%~f2" 2 %~1 PNG & goto:pngfwe)
 	for /f "tokens=2,4,6,8,10 delims=:	" %%a in ('findstr /r /i /b /c:"zc:..zm:..zs:" "%pnglog%"') do (
 		set "zc=%%a"
 		set "zm=%%b"
 		set "zs=%%c"
 	)
 	pngwolfzopfli --zopfli-iter=10 --zopfli-maxsplit=0 --zlib-window=15 --zlib-level=!zc! --zlib-memlevel=!zm! --zlib-strategy=!zs! --max-stagnate-time=0 --max-evaluations=1 --in="%filework%" --out="%filework%" 1>nul 2>&1
-	if errorlevel 1 (call:saverrorlog "%~f2" 2 %~1 & goto:pngfwe)
+	if errorlevel 1 (call:saverrorlog "%~f2" 2 %~1 PNG & goto:pngfwe)
 )
 if %png% equ 1 (
 	>"%pnglog%" 2>nul truepng -y -i0 -zw7 -zc7 -zm8-9 -zs0-1 -f0,1,5 -fs:2 %advanced% -force -out "%filework%" "%~2"
-	if errorlevel 1 (call:saverrorlog "%~f2" 2 %~1 & goto:pngfwe)
+	if errorlevel 1 (call:saverrorlog "%~f2" 2 %~1 PNG & goto:pngfwe)
 	for /f "tokens=2,4,6,8,10 delims=:	" %%a in ('findstr /r /i /b /c:"zc:..zm:..zs:" "%pnglog%"') do (
 		set "zc=%%a"
 		set "zm=%%b"
 		set "zs=%%c"
 	)
 	truepng -y -i0 -zw7 -zc!zc! -zm!zm! -zs!zs! -f5 -fs:7 -na -nc -np "%filework%" 1>nul 2>&1
-	if errorlevel 1 (call:saverrorlog "%~f2" 2 %~1 & goto:pngfwe)
+	if errorlevel 1 (call:saverrorlog "%~f2" 2 %~1 PNG & goto:pngfwe)
 	advdef -z3 "%filework%" 1>nul 2>&1
-	if errorlevel 1 (call:saverrorlog "%~f2" 2 %~1 & goto:pngfwe)
+	if errorlevel 1 (call:saverrorlog "%~f2" 2 %~1 PNG & goto:pngfwe)
 )
 deflopt -k "%filework%" 1>nul 2>&1
-if errorlevel 1 (call:saverrorlog "%~f2" 2 %~1 & goto:pngfwe)
+if errorlevel 1 (call:saverrorlog "%~f2" 2 %~1 PNG & goto:pngfwe)
 call:backup2 "%~f2" "%filework%" "%~f3" || set "errbackup=1"
-if %errbackup% neq 0 (call:saverrorlog "%~f2" 2 %~1 & goto:pngfwe)
-if /i "%pngtags%" equ "true" (1>nul 2>&1 truepng -nz -md remove all "%~3" || (call:saverrorlog "%~f2" 2 %~1 & goto:pngfwe))
+if %errbackup% neq 0 (call:saverrorlog "%~f2" 2 %~1 PNG & goto:pngfwe)
+if /i "%pngtags%" equ "true" (1>nul 2>&1 truepng -nz -md remove all "%~3" || (call:saverrorlog "%~f2" 2 %~1 PNG & goto:pngfwe))
 call:savelog "%~f3" %psize%
 if %thread% equ 1 for %%a in ("%~f3") do (set /a "ImageSizePNG+=%%~za" & set /a "TotalSizePNG+=%psize%")
 :pngfwe
@@ -652,36 +649,36 @@ if /i "%~f2" equ "%~f3" (
 	set "filework=%~f3"
 )
 if not exist "%~2" (
-	call:saverrorlog "%~f2" 3 %~1
+	call:saverrorlog "%~f2" 3 %~1 JPG
 	exit /b 1
 )
 if %jpeg% equ 1 (
 	jpegtran -verbose -revert -optimize -copy all -outfile "%filework%" "%~2" 1>"%jpglog%" 2>&1
-	if errorlevel 1 (call:saverrorlog "%~f2" 2 %~1 & goto:jpegfwe)
+	if errorlevel 1 (call:saverrorlog "%~f2" 2 %~1 JPG & goto:jpegfwe)
 	for /f "tokens=4,10 delims=:,= " %%a in ('findstr /C:"Start Of Frame" "%jpglog%" 2^>nul') do (set "ep=%%a")
 	if "!ep!" equ "0xc0" goto:jpegfwb
 	if "!ep!" equ "0xc2" (
 		if /i "%~f2" equ "%~f3" (1>nul 2>&1 move /y "%filework%" "%~f3" || set "errbackup=1")
 		goto:jpegfwf
 	) else (
-		call:saverrorlog "%~f2" 2 %~1 & goto:jpegfwe
+		call:saverrorlog "%~f2" 2 %~1 JPG & goto:jpegfwe
 	)
 )
 if %jpeg% equ 2 (
 	jpegtran -verbose -copy all -outfile "%filework%" "%~2" 1>"%jpglog%" 2>&1
-	if errorlevel 1 (call:saverrorlog "%~f2" 2 %~1 & goto:jpegfwe)
+	if errorlevel 1 (call:saverrorlog "%~f2" 2 %~1 JPG & goto:jpegfwe)
 	for /f "tokens=4,10 delims=:,= " %%a in ('findstr /C:"Start Of Frame" "%jpglog%" 2^>nul') do (set "ep=%%a")
 	if "!ep!" equ "0xc2" goto:jpegfwb
 	if "!ep!" equ "0xc0" (
 		if /i "%~f2" equ "%~f3" (1>nul 2>&1 move /y "%filework%" "%~f3" || set "errbackup=1")
 		goto:jpegfwf
 	) else (
-		call:saverrorlog "%~f2" 2 %~1 & goto:jpegfwe
+		call:saverrorlog "%~f2" 2 %~1 JPG & goto:jpegfwe
 	)
 )
 if %jpeg% equ 3 (
 	jpginfo "%~2" 1>"%jpglog%" 2>&1
-	if errorlevel 1 (call:saverrorlog "%~f2" 2 %~1 & goto:jpegfwe)
+	if errorlevel 1 (call:saverrorlog "%~f2" 2 %~1 JPG & goto:jpegfwe)
 	for /f "usebackq tokens=5" %%a in ("%jpglog%") do set "ep=%%~a"
 	if /i "!ep!" equ "Baseline" (
 		jpegtran -verbose -revert -optimize -copy all -outfile "%filework%" "%~2" 1>nul 2>&1 &&	goto:jpegfwb
@@ -689,7 +686,7 @@ if %jpeg% equ 3 (
 	if /i "!ep!" equ "Progressive" (
 		jpegtran -verbose -copy all -outfile "%filework%" "%~2" 1>nul 2>&1 && goto:jpegfwb
 	)
-	call:saverrorlog "%~f2" 2 %~1 & goto:jpegfwe
+	call:saverrorlog "%~f2" 2 %~1 JPG & goto:jpegfwe
 )
 :jpegfwb
 if /i "%~f2" neq "%~f3" (
@@ -699,8 +696,8 @@ if /i "%~f2" neq "%~f3" (
 )
 :jpegfwf
 1>nul 2>&1 del /f /q "%jpglog%"
-if %errbackup% neq 0 (call:saverrorlog "%~f2" 3 %~1 & goto:jpegfwe)
-if /i "%jpegtags%" equ "true" (1>nul 2>&1 jpegstripper -y "%~f3" || (call:saverrorlog "%~f2" 2 %~1 & exit /b))
+if %errbackup% neq 0 (call:saverrorlog "%~f2" 3 %~1 JPG & goto:jpegfwe)
+if /i "%jpegtags%" equ "true" (1>nul 2>&1 jpegstripper -y "%~f3" || (call:saverrorlog "%~f2" 2 %~1 JPG & exit /b))
 call:savelog "%~f3" %jsize%
 if %thread% equ 1 for %%a in ("%~f3") do (set /a "ImageSizeJPG+=%%~za" & set /a "TotalSizeJPG+=%jsize%")
 exit /b
@@ -726,13 +723,13 @@ if /i "%~f2" equ "%~f3" (
 set "filework2=%tmppath%\%~n2%1%-gifsicle2~x1"
 set "filework=%filework%%filework2%"
 if not exist "%~2" (
-	call:saverrorlog "%~f2" 3 %~1
+	call:saverrorlog "%~f2" 3 %~1 GIF
 	exit /b 1
 )
 gifsicle --batch %giftags% --optimize=3 --output "%filework1%" "%~2" 1>nul 2>&1
-if errorlevel 1 (call:saverrorlog "%~f2" 2 %~1 & goto:giffwe)
+if errorlevel 1 (call:saverrorlog "%~f2" 2 %~1 GIF & goto:giffwe)
 gifsicle --batch %giftags% --output "%filework2%" "%~2" 1>nul 2>&1
-if errorlevel 1 (call:saverrorlog "%~f2" 2 %~1 & goto:giffwe)
+if errorlevel 1 (call:saverrorlog "%~f2" 2 %~1 GIF & goto:giffwe)
 if /i "%~f2" neq "%~f3" (
 	call:backup "%filework1%" "%~f2" >nul || set "errbackup=1"
 	call:backup "%filework1%" "%filework2%" true >nul || set "errbackup=1"
@@ -740,7 +737,7 @@ if /i "%~f2" neq "%~f3" (
 	call:backup "%~f3" "%filework1%" true >nul || set "errbackup=1"
 	call:backup "%~f3" "%filework2%" true >nul || set "errbackup=1"
 )
-if %errbackup% neq 0 (call:saverrorlog "%~f2" 3 %~1 & goto:giffwe)
+if %errbackup% neq 0 (call:saverrorlog "%~f2" 3 %~1 GIF & goto:giffwe)
 call:savelog "%~f3" %gsize%
 if %thread% equ 1 for %%a in ("%~f3") do (set /a "ImageSizeGIF+=%%~za" & set /a "TotalSizeGIF+=%jsize%")
 exit /b
@@ -795,6 +792,7 @@ endlocal & exit /b
 ::	2 - Images are not supported
 ::	3 - Images are not found
 ::%3 -	thread number
+::%4 -	JPG|PNG|GIF
 :saverrorlog
 if exist "%filework%" 1>nul 2>&1 del /f /q "%filework%"
 if "%~2" equ "" exit /b
@@ -839,56 +837,55 @@ exit /b
 :end
 call:setvtime ftime
 if %jpeg% equ 0 if %png% equ 0 if %gif% equ 0 1>nul 2>&1 ping -n 1 -w 500 127.255.255.255 & goto:finmessage
+set /a "TotalNumPNG+=TotalNumErrPNG"
+set /a "TotalNumJPG+=TotalNumErrJPG"
+set /a "TotalNumGIF+=TotalNumErrGIF"
 for %%b in ("%filelisterr%2" "%filelisterr%3") do (
 	for /f "tokens=1" %%a in ('findstr /e /i /c:".png" "%%~b*" 2^>nul ^| find /i /c ".png" 2^>nul') do (
-		set /a "TotalNumErrPNG+=%%a" & set /a "TotalNumPNG-=%%a"
+		set /a "TotalNumErrPNG+=%%a"
 	)
 	for /f "tokens=1" %%a in ('findstr /e /i /c:".jpg" "%%~b*" 2^>nul ^| find /i /c ".jpg" 2^>nul') do (
-		set /a "TotalNumErrJPG+=%%a" & set /a "TotalNumJPG-=%%a"
+		set /a "TotalNumErrJPG+=%%a"
 	)
 	for /f "tokens=1" %%a in ('findstr /e /i /c:".jpe" "%%~b*" 2^>nul ^| find /i /c ".jpe" 2^>nul') do (
-		set /a "TotalNumErrJPG+=%%a" & set /a "TotalNumJPG-=%%a"
+		set /a "TotalNumErrJPG+=%%a"
 	)
 	for /f "tokens=1" %%a in ('findstr /e /i /c:".jpeg" "%%~b*" 2^>nul ^| find /i /c ".jpeg" 2^>nul') do (
-		set /a "TotalNumErrJPG+=%%a" & set /a "TotalNumJPG-=%%a"
+		set /a "TotalNumErrJPG+=%%a"
 	)
 	for /f "tokens=1" %%a in ('findstr /e /i /c:".gif" "%%~b*" 2^>nul ^| find /i /c ".gif" 2^>nul') do (
-		set /a "TotalNumErrGIF+=%%a" & set /a "TotalNumGIF-=%%a"
+		set /a "TotalNumErrGIF+=%%a"
 	)
 )
-set /a "TotalNumNOpt=TotalNumNOptPNG+TotalNumNOptJPG+TotalNumNOptGIF"
-if %TotalNumNOpt% gtr 0 (
+for %%a in ("%filelisterr%1") do if %%~za gtr 0 (
 	echo.
 	echo.                         Images are already optimized
 	echo.%spacebar%
 	type %filelisterr%1
 	echo.%spacebar%
 )
-set /a "TotalNumErr=TotalNumErrPNG+TotalNumErrJPG+TotalNumErrGIF"
-if %TotalNumErr% gtr 0 (
-	set "isfirst="
-	for %%a in ("%filelisterr%2*") do (
-		if not defined isfirst (
-			echo.
-			echo.                           Images are not supported
-			echo.%spacebar%
-			set "isfirst=1"
-		)
-		type "%%~a"
+set "isfirst="
+for %%a in ("%filelisterr%2*") do if %%~za gtr 0 (
+	if not defined isfirst (
+		echo.
+		echo.                           Images are not supported
+		echo.%spacebar%
+		set "isfirst=1"
 	)
-	if defined isfirst echo.%spacebar%
-	set "isfirst="
-	for %%a in ("%filelisterr%3*") do (
-		if not defined isfirst (
-			echo.
-			echo.                             Images are not found
-			echo.%spacebar%
-			set "isfirst=1"
-		)
-		type "%%~a"
-	)
-	if defined isfirst echo.%spacebar%
+	type "%%~a"
 )
+if defined isfirst echo.%spacebar%
+set "isfirst="
+for %%a in ("%filelisterr%3*") do if %%~za gtr 0 (
+	if not defined isfirst (
+		echo.
+		echo.                             Images are not found
+		echo.%spacebar%
+		set "isfirst=1"
+	)
+	type "%%~a"
+)
+if defined isfirst echo.%spacebar%
 for %%a in ("%filelisterr%") do if %%~za gtr 0 (
 	echo.
 	echo.                            Images with characters
@@ -972,8 +969,8 @@ exit /b
 ::%1 - JPG|PNG|GIF
 :totalmsg
 if %~2 equ 0 exit /b
-set /a "tt=!TotalNum%~1!-!TotalNumNOpt%~1!"
-if %tt% equ 0 exit /b
+set /a "opt=!TotalNum%~1!-!TotalNumNOpt%~1!-!TotalNumErr%~1!"
+if %opt% equ 0 exit /b
 if not defined isfirst (
 	echo.
 	echo.                                     Total
@@ -981,9 +978,6 @@ if not defined isfirst (
 	set "isfirst=1"
 )
 setlocal
-set "nopt=!TotalNumNOpt%~1!"
-set /a "opt=!TotalNum%~1!-!nopt!"
-set "tterr=!TotalNumErr%~1!"
 set "F1=%~1 [%opt%/!TotalNum%~1!]:                                  "
 set "F5=           !perc%~1!"
 for %%a in (KB MB GB TB) do (
