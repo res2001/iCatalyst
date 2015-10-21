@@ -971,6 +971,7 @@ exit /b
 
 ::%1 - JPG|PNG|GIF
 :totalmsg
+if %~2 equ 0 exit /b
 set /a "tt=!TotalNum%~1!-!TotalNumNOpt%~1!"
 if %tt% equ 0 exit /b
 if not defined isfirst (
@@ -980,15 +981,9 @@ if not defined isfirst (
 	set "isfirst=1"
 )
 setlocal
-if %~2 equ 0 (
-	set "opt=0"
-	set "tterr=%tt%"
-	set "nopt=0"
-) else (
-	set "nopt=!TotalNumNOpt%~1!"
-	set /a "opt=!TotalNum%~1!-!nopt!"
-	set "tterr=!TotalNumErr%~1!"
-)
+set "nopt=!TotalNumNOpt%~1!"
+set /a "opt=!TotalNum%~1!-!nopt!"
+set "tterr=!TotalNumErr%~1!"
 set "F1=%~1 [%opt%/!TotalNum%~1!]:                                  "
 set "F5=           !perc%~1!"
 for %%a in (KB MB GB TB) do (
