@@ -88,7 +88,6 @@ for %%a in (JPG PNG GIF) do (
 	set "ImageNum%%a=0"
 	set "TotalNum%%a=0"
 	set "TotalNumErr%%a=0"
-	set "TotalNumNOpt%%a=0"
 	set "TotalSize%%a=0"
 	set "STotalSize%%a=0"
 	set "ImageSize%%a=0"
@@ -121,11 +120,11 @@ set "filelist=%tmppath%\filelist"
 set "filelisterr=%tmppath%\filerr"
 ::Table size
 set "TFN=31"
-::restrictions in bytes (default - 100Mb)
-set "BYTECONV=104857600"
 set "KB=1024"
 set /a "MB=KB*KB"
 set /a "GB=MB*KB"
+::restrictions in bytes (default - 100Mb)
+set /a "BYTECONV=5*%MB%"
 
 set "thread=" & set "updatecheck=" & set "outdir=" & set "nooutfolder="
 set "jpegtags=" & set "xtreme=" & set "advanced=" & set "pngtags=" & set "giftags="
@@ -321,13 +320,8 @@ if not defined typenum%~1%~2 set "typenum%~1%~2=1"
 if not exist "%logfile%%1.%2" exit /b
 set "tmpskip=!typenum%~1%~2!"
 for /f "usebackq skip=%tmpskip% tokens=1-5 delims=;" %%b in ("%logfile%%1.%2") do (
-	if %%~e equ 0 (
-		set /a "TotalNumNOpt%~1+=1"
-		>>"%filelisterr%1" echo. %%~fb
-	) else  (
-		call:stepcalc %~1 %%c %%d
-		call:printfileinfo "%%~b" %%c %%d %%e %%f %~1
-	)
+	call:stepcalc %~1 %%c %%d
+	call:printfileinfo "%%~b" %%c %%d %%e %%f %~1
 	set /a "typenum%~1%~2+=1"
 )
 exit /b
@@ -343,27 +337,27 @@ setlocal
 set "fn="
 call:cropfilename fn "%~1" %TFN%
 set "origsize=%~2"
+set "optsize=%~3"
+set "change=%~4"
 call:prepsize origsize
 set "origsize=          %origsize%"
-set "optsize=%~3"
 call:prepsize optsize
 set "optsize=          %optsize%"
-set "change=%~4"
-set "sign="
-if %change% lss 0 (set "sign=-" & set "change=%change:~1%")
 call:prepsize change
-set "change=           %sign%%change%"
-set "percent=          %5%%"
+set "change=           %change%"
+set "percent=          %~5%%"
 echo. !fn:~,%TFN%!^|%origsize:~-11%^|%optsize:~-11%^|%change:~-10%^|%percent:~-10%
 endlocal
 exit /b
 
 ::%1 - variable name
 :prepsize
-if !%~1! geq %GB% (call:division %~1 %GB% 100 & set "%~1=!%~1!GB" & exit /b)
-if !%~1! geq %MB% (call:division %~1 %MB% 100 & set "%~1=!%~1!MB" & exit /b)
-if !%~1! geq %KB% (call:division %~1 %KB% 100 & set "%~1=!%~1!KB" & exit /b)
-set "%~1=!%~1!byte"
+set "sign="
+if !%~1! lss 0 (set "sign=-" & set /a "%~1*=-1")
+if !%~1! geq %GB% (call:division %~1 %GB% 100 & set "%~1=%sign%!%~1! GB" & exit /b)
+if !%~1! geq %MB% (call:division %~1 %MB% 100 & set "%~1=%sign%!%~1! MB" & exit /b)
+if !%~1! geq %KB% (call:division %~1 %KB% 100 & set "%~1=%sign%!%~1! KB" & exit /b)
+set "%~1=%sign%!%~1! B"
 exit /b
 
 ::%1 - file name
@@ -777,15 +771,18 @@ exit /b 0
 :savelog
 setlocal
 set /a "change=%~z1-%2"
+set "sign="
+if "%change:~,1%" equ "-" (set "sign=-" & set "change=%change:~1%")
 set /a "perc=%change%*100/%2" 2>nul
 set /a "fract=%change%*100%%%2*100/%2" 2>nul
-set /a "perc=%perc%*100+%fract%"
+set "perc=%perc%%fract%"
 call:division perc 100 100
->>"%logfile2%" echo.%~1;%2;%~z1;%change%;%perc%;ok
+>>"%logfile2%" echo.%~1;%2;%~z1;%sign%%change%;%sign%%perc%;ok
 if %thread% equ 1 (
-	call:printfileinfo "%~1" %2 %~z1 %change% %perc%
+	call:printfileinfo "%~1" %2 %~z1 %sign%%change% %sign%%perc%
 )
-endlocal & exit /b
+endlocal
+exit /b
 
 ::%1 - file name
 ::%2 - 	1 - Images are already optimized
@@ -856,13 +853,6 @@ for %%b in ("%filelisterr%2" "%filelisterr%3") do (
 	for /f "tokens=1" %%a in ('findstr /e /i /c:".gif" "%%~b*" 2^>nul ^| find /i /c ".gif" 2^>nul') do (
 		set /a "TotalNumErrGIF+=%%a"
 	)
-)
-for %%a in ("%filelisterr%1") do if %%~za gtr 0 (
-	echo.
-	echo.                         Images are already optimized
-	echo.%spacebar%
-	type %filelisterr%1
-	echo.%spacebar%
 )
 set "isfirst="
 for %%a in ("%filelisterr%2*") do if %%~za gtr 0 (
@@ -937,22 +927,25 @@ set /a "STotalSize%~1+=!TotalSize%~1!"
 set /a "SImageSize%~1+=!ImageSize%~1!"
 set "TotalSize%~1=0"
 set "ImageSize%~1=0"
+echo.!STotalSize%~1!	!SImageSize%~1!	!step%~1!	!step10%~1!	!stepB%~1!
 if !SImageSize%~1! lss %BYTECONV% if !STotalSize%~1! lss %BYTECONV% exit /b
 set /a "step%~1=(!step%~1!+1)%%3"
 if !step%~1! equ 0 (
 	set "step10%~1=100"
-	set /a "stepB%~1*=1024"
-	call:division2 STotalSize%~1 1024 100
-	call:division2 SImageSize%~1 1024 100
+	set /a "stepB%~1*=%KB%"
+	call:division2 STotalSize%~1 %KB% 100
+	call:division2 SImageSize%~1 %KB% 100
 ) else (
 	set /a "step10%~1/=10"
 	set /a "STotalSize%~1/=10"
 	set /a "SImageSize%~1/=10"
 )
+echo.!STotalSize%~1!	!SImageSize%~1!	!step%~1!	!step10%~1!	!stepB%~1!
 exit /b
 
 ::%1 - JPG|PNG|GIF
 :fincalc
+if !TotalSize%~1! equ 0 if !STotalSize%~1! equ 0 exit /b
 call:division2 TotalSize%~1 !stepB%~1! !step10%~1!
 call:division2 ImageSize%~1 !stepB%~1! !step10%~1!
 set /a "STotalSize%~1+=!TotalSize%~1!"
@@ -960,16 +953,50 @@ set /a "SImageSize%~1+=!ImageSize%~1!"
 set "TotalSize%~1=0"
 set "ImageSize%~1=0"
 set /a "change%~1=(!SImageSize%~1!-!STotalSize%~1!)" 2>nul
+set "step10=!step10%~1!"
+if %step10% equ 1 set "step10="
+if !STotalSize%~1! geq %GB%%step10% (
+	call:division STotalSize%~1 %GB%%step10% 100
+	call:division SImageSize%~1 %GB%%step10% 100
+	call:division change%~1 %GB%%step10% 100
+	set "stepB%~1=GB" & set "%~1=%sign%!var!"
+	exit /b
+)
+
 set /a "perc%~1=!change%~1!*100/!STotalSize%~1!" 2>nul
 set /a "fract=!change%~1!*100%%!STotalSize%~1!*100/!STotalSize%~1!" 2>nul
 set /a "perc%~1=!perc%~1!*100+%fract%" 2>nul
 call:division perc%~1 100 100
+echo.%~0:	!STotalSize%~1!	!SImageSize%~1!	!step%~1!	!step10%~1!	!stepB%~1!
+exit /b
+
+::%1 - variable name
+::%2 - JPG|PNG|GIF
+:finprepsize
+setlocal
+set "var=!%~1!"
+set "step10=!step10%~1!"
+if %step10% equ 1 set "step10="
+set "sign="
+if %var% lss 0 (set "sign=-" & set /a "var*=-1")
+if %var% geq %GB%%step10% (
+	call:division %var% %GB%%step10% 100
+	endlocal & set "stepB%~1=GB" & set "%~1=%sign%!var!"
+	exit /b
+)
+if %var% geq %MB%%step10% (
+	call:division %var% %MB%%step10% 100
+	endlocal & set "stepB%~1=MB" & set "%~1=%sign%!var!"
+	exit /b
+)
+call:division %var% %KB%%step10% 100
+endlocal & set "stepB%~1=KB" & set "%~1=%sign%!var!"
 exit /b
 
 ::%1 - JPG|PNG|GIF
 :totalmsg
 if %~2 equ 0 exit /b
-set /a "opt=!TotalNum%~1!-!TotalNumNOpt%~1!-!TotalNumErr%~1!"
+set /a "opt=!TotalNum%~1!-!TotalNumErr%~1!"
 if %opt% equ 0 exit /b
 if not defined isfirst (
 	echo.
