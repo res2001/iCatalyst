@@ -863,7 +863,7 @@ if %TotalNumErr% gtr 0 (
 	for %%a in ("%filelisterr%2*") do if %%~za gtr 0 (
 		if not defined isfirst (
 			echo.
-			echo. Images are not supported
+			echo. Images are not supported:
 			set "isfirst=1"
 		)
 		type "%%~a"
@@ -872,14 +872,14 @@ if %TotalNumErr% gtr 0 (
 	for %%a in ("%filelisterr%3*") do if %%~za gtr 0 (
 		if not defined isfirst (
 			echo.
-			echo. Images are not found
+			echo. Images are not found:
 			set "isfirst=1"
 		)
 		type "%%~a"
 	)
 	for %%a in ("%filelisterr%") do if %%~za gtr 0 (
 		echo.
-		echo. Images with characters
+		echo. Images with characters:
 		type "%%~a"
 		echo.%spacebar%
 	)
