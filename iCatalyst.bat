@@ -124,7 +124,7 @@ set "KB=1024"
 set /a "MB=KB*KB"
 set /a "GB=MB*KB"
 ::restrictions in bytes (default - 100Mb)
-set /a "BYTECONV=5*%MB%"
+set /a "BYTECONV=100*%MB%"
 
 set "thread=" & set "updatecheck=" & set "outdir=" & set "nooutfolder="
 set "jpegtags=" & set "xtreme=" & set "advanced=" & set "pngtags=" & set "giftags="
@@ -854,36 +854,37 @@ for %%b in ("%filelisterr%2" "%filelisterr%3") do (
 		set /a "TotalNumErrGIF+=%%a"
 	)
 )
-set "isfirst="
-for %%a in ("%filelisterr%2*") do if %%~za gtr 0 (
-	if not defined isfirst (
-		echo.
-		echo.                           Images are not supported
-		echo.%spacebar%
-		set "isfirst=1"
-	)
-	type "%%~a"
-)
-if defined isfirst echo.%spacebar%
-set "isfirst="
-for %%a in ("%filelisterr%3*") do if %%~za gtr 0 (
-	if not defined isfirst (
-		echo.
-		echo.                             Images are not found
-		echo.%spacebar%
-		set "isfirst=1"
-	)
-	type "%%~a"
-)
-if defined isfirst echo.%spacebar%
-for %%a in ("%filelisterr%") do if %%~za gtr 0 (
+set /a "TotalNumErr=%TotalNumErrPNG%+%TotalNumErrJPG%+%TotalNumErrGIF%"
+if %TotalNumErr% gtr 0 (
 	echo.
-	echo.                            Images with characters
+	echo.                                  Error
 	echo.%spacebar%
-	type "%%~a"
-	echo.%spacebar%
+	set "isfirst="
+	for %%a in ("%filelisterr%2*") do if %%~za gtr 0 (
+		if not defined isfirst (
+			echo.
+			echo. Images are not supported
+			set "isfirst=1"
+		)
+		type "%%~a"
+	)
+	set "isfirst="
+	for %%a in ("%filelisterr%3*") do if %%~za gtr 0 (
+		if not defined isfirst (
+			echo.
+			echo. Images are not found
+			set "isfirst=1"
+		)
+		type "%%~a"
+	)
+	for %%a in ("%filelisterr%") do if %%~za gtr 0 (
+		echo.
+		echo. Images with characters
+		type "%%~a"
+		echo.%spacebar%
+	)
+	set "isfirst="
 )
-set "isfirst="
 call:fincalc PNG
 call:fincalc JPG
 call:fincalc GIF
@@ -927,7 +928,7 @@ set /a "STotalSize%~1+=!TotalSize%~1!"
 set /a "SImageSize%~1+=!ImageSize%~1!"
 set "TotalSize%~1=0"
 set "ImageSize%~1=0"
-echo.!STotalSize%~1!	!SImageSize%~1!	!step%~1!	!step10%~1!	!stepB%~1!
+::echo.!STotalSize%~1!	!SImageSize%~1!	!step%~1!	!step10%~1!	!stepB%~1!
 if !SImageSize%~1! lss %BYTECONV% if !STotalSize%~1! lss %BYTECONV% exit /b
 set /a "step%~1=(!step%~1!+1)%%3"
 if !step%~1! equ 0 (
@@ -940,7 +941,7 @@ if !step%~1! equ 0 (
 	set /a "STotalSize%~1/=10"
 	set /a "SImageSize%~1/=10"
 )
-echo.!STotalSize%~1!	!SImageSize%~1!	!step%~1!	!step10%~1!	!stepB%~1!
+::echo.!STotalSize%~1!	!SImageSize%~1!	!step%~1!	!step10%~1!	!stepB%~1!
 exit /b
 
 ::%1 - JPG|PNG|GIF
@@ -953,44 +954,61 @@ set /a "SImageSize%~1+=!ImageSize%~1!"
 set "TotalSize%~1=0"
 set "ImageSize%~1=0"
 set /a "change%~1=(!SImageSize%~1!-!STotalSize%~1!)" 2>nul
-set "step10=!step10%~1!"
+::echo.%~0:	!STotalSize%~1!	!SImageSize%~1!	!step%~1!	!step10%~1!	!stepB%~1!
+set "divider=" & set "dp=" & set "step10=!step10%~1!"
 if %step10% equ 1 set "step10="
-if !STotalSize%~1! geq %GB%%step10% (
-	call:division STotalSize%~1 %GB%%step10% 100
-	call:division SImageSize%~1 %GB%%step10% 100
-	call:division change%~1 %GB%%step10% 100
-	set "stepB%~1=GB" & set "%~1=%sign%!var!"
-	exit /b
+if !stepB%~1! geq %GB% (
+	if !STotalSize%~1! geq %KB%%step10:~1% (
+		set "divider=%KB%%step10:~1%"
+		set "dp=100"
+		set "stepB%~1=TB"
+	) else (
+		set "divider=%step10%"
+		set "dp=%step10%"
+		set "stepB%~1=GB"
+	)
+) else if !stepB%~1! equ %MB% (
+	if !STotalSize%~1! geq %MB%%step10:~1% (
+		set "divider=%MB%%step10:~1%"
+		set "dp=100"
+		set "stepB%~1=TB"
+	) else if !STotalSize%~1! geq %KB%%step10:~1% (
+		set "divider=%KB%%step10:~1%"
+		set "dp=100"
+		set "stepB%~1=GB"
+	) else (
+		set "divider=%step10%"
+		set "dp=%step10%"
+		set "stepB%~1=MB"
+	)
+) else if !stepB%~1! equ %KB% (
+	if !STotalSize%~1! geq %MB%%step10:~1% (
+		set "divider=%MB%%step10:~1%"
+		set "dp=100"
+		set "stepB%~1=GB"
+	) else if !STotalSize%~1! geq %KB%%step10:~1% (
+		set "divider=%KB%%step10:~1%"
+		set "dp=100"
+		set "stepB%~1=MB"
+	) else (
+		set "divider=%step10%"
+		set "dp=%step10%"
+		set "stepB%~1=KB"
+	)
 )
-
-set /a "perc%~1=!change%~1!*100/!STotalSize%~1!" 2>nul
-set /a "fract=!change%~1!*100%%!STotalSize%~1!*100/!STotalSize%~1!" 2>nul
+set "change=!change%~1!"
+set "ST=!STotalSize%~1!"
+call:division2 ST %divider% %dp%
+call:division2 change %divider% %dp%
+set /a "perc%~1=%change%*100/%ST%" 2>nul
+set /a "fract=%change%*100%%%ST%*100/%ST%" 2>nul
 set /a "perc%~1=!perc%~1!*100+%fract%" 2>nul
 call:division perc%~1 100 100
-echo.%~0:	!STotalSize%~1!	!SImageSize%~1!	!step%~1!	!step10%~1!	!stepB%~1!
-exit /b
-
-::%1 - variable name
-::%2 - JPG|PNG|GIF
-:finprepsize
-setlocal
-set "var=!%~1!"
-set "step10=!step10%~1!"
-if %step10% equ 1 set "step10="
-set "sign="
-if %var% lss 0 (set "sign=-" & set /a "var*=-1")
-if %var% geq %GB%%step10% (
-	call:division %var% %GB%%step10% 100
-	endlocal & set "stepB%~1=GB" & set "%~1=%sign%!var!"
-	exit /b
-)
-if %var% geq %MB%%step10% (
-	call:division %var% %MB%%step10% 100
-	endlocal & set "stepB%~1=MB" & set "%~1=%sign%!var!"
-	exit /b
-)
-call:division %var% %KB%%step10% 100
-endlocal & set "stepB%~1=KB" & set "%~1=%sign%!var!"
+call:division STotalSize%~1 %divider% %dp%
+call:division SImageSize%~1 %divider% %dp%
+call:division change%~1 %divider% %dp%
+::echo.%~0:	!STotalSize%~1!	!SImageSize%~1!	!step%~1!	!step10%~1!	!stepB%~1!	%divider%	%dp%
+set "divider=" & set "dp=" & set "step10=" & set "change=" & set "ST="
 exit /b
 
 ::%1 - JPG|PNG|GIF
@@ -1007,19 +1025,11 @@ if not defined isfirst (
 setlocal
 set "F1=%~1 [%opt%/!TotalNum%~1!]:                                  "
 set "F5=           !perc%~1!"
-for %%a in (KB MB GB TB) do (
-	set /a "stepB%~1/=1024"
-	if !stepB%~1! equ 1 (
-		call:division STotalSize%~1 !step10%~1! !step10%~1!
-		call:division SImageSize%~1 !step10%~1! !step10%~1!
-		call:division change%~1 !step10%~1! !step10%~1!
-		set "F2=           !STotalSize%~1!"
-		set "F3=           !SImageSize%~1!"
-		set "F4=           !change%~1!"
-		echo. !F1:~,%TFN%!^|!F2:~-9!%%~a^|!F3:~-9!%%~a^|!F4:~-8!%%~a^|%F5:~-9%%%
-		echo.%spacebar%
-		endlocal & exit /b
-))
+set "F2=           !STotalSize%~1! !stepB%~1!"
+set "F3=           !SImageSize%~1! !stepB%~1!"
+set "F4=           !change%~1! !stepB%~1!"
+echo. !F1:~,%TFN%!^|!F2:~-11!^|!F3:~-11!^|!F4:~-10!^|%F5:~-10%%%
+echo.%spacebar%
 endlocal & exit /b
 
 :readini
