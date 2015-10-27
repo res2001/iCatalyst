@@ -340,13 +340,14 @@ set "origsize=%~2"
 set "optsize=%~3"
 ::set "change=%~4"
 ::call:calcperc %~z1 %change% perc
-call:prepsize origsize
-call:prepsize optsize
+set "measure="
+call:prepsize origsize measure
+call:prepsize2 optsize measure
 set /a "change=%~4"
-set "origsize=          %origsize%"
-set "optsize=          %optsize%"
-call:prepsize change
-set "change=           %change%"
+set "origsize=          %origsize% %measure%"
+set "optsize=          %optsize% %measure%"
+call:prepsize change measure
+set "change=           %change% %measure%"
 set "percent=          %~5%%"
 echo. !fn:~,%TFN%!^|%origsize:~-10%^|%optsize:~-11%^|%change:~-11%^|%percent:~-10%
 endlocal
@@ -360,9 +361,32 @@ set "var=!%~1!"
 set "sign="
 if "%var:~,1%" equ "-" (set "sign=-" & set "var=%var:~1%")
 set "meas=B"
-if %var% geq %GB% (call:division var %GB% 100 & set "meas=GB" & goto:finprepsize)
-if %var% geq %MB% (call:division var %MB% 100 & set "meas=MB" & goto:finprepsize)
-if %var% geq %KB% (call:division var %KB% 100 & set "meas=KB" & goto:finprepsize)
+if %var% geq %GB% (set "meas=GB" & goto:GBprepsize)
+if %var% geq %MB% (set "meas=MB" & goto:MBprepsize)
+if %var% geq %KB% (set "meas=KB" & goto:KBprepsize)
+goto:finprepsize
+::%1 - variable name for number (in/out)
+::%2 - cariable name for measure (in/out)
+:prepsize2
+if not defined %~2 exit /b
+setlocal
+set "var=!%~1!"
+set "sign="
+if "%var:~,1%" equ "-" (set "sign=-" & set "var=%var:~1%")
+set "meas=!%~2!"
+if "%meas%" equ "KB" goto:KBprepsize
+if "%meas%" equ "B" goto:finprepsize
+if "%meas%" equ "MB" goto:MBprepsize
+if "%meas%" equ "GB" goto:GBprepsize
+goto:finprepsize
+:GBprepsize
+call:division var %GB% 100 & goto:finprepsize
+:MBprepsize
+call:division var %MB% 100 & goto:finprepsize
+:KBprepsize
+call:division var %KB% 100 & goto:finprepsize
+:Bprepsize
+call:division var 1 100
 :finprepsize
 endlocal & set "%~1=%sign%%var%" & set "%~2=%meas%"
 exit /b
@@ -802,7 +826,7 @@ call:division2 ts 1024 100
 call:division2 is 1024 100
 set /a "change=%is%-%ts%"
 call:calcperc %ts% %change% perc
-set /a "change=%~2-%~z1"
+set /a "change=%~z1-%~2"
 >>"%logfile2%" echo.%~1;%~2;%~z1;%change%;%perc%;ok
 if %thread% equ 1 (
 	call:printfileinfo "%~1" %2 %~z1 %change% %perc%
@@ -1056,9 +1080,77 @@ if %divider% gtr 1 (
 	call:division change%~1 %divider% %dp%
 )
 call:calcperc %ST% %change% perc%~1
-echo.%~0: %ST%	%change%	!stepB%~1!	%divider%	%dp%
+echo.%~0: %ST%	%change%
 echo.%~0: !STotalSize%~1!	!SImageSize%~1!	!change%~1!	!step%~1!	!step10%~1!	!stepB%~1!	%divider%	%dp%
 set "divider=" & set "dp=" & set "step10=" & set "change=" & set "ST="
+exit /b
+
+::%1 - stepB (in)
+::%2 - size (in)
+::%3 - step10 (in)
+::%4 - variable name for divider (out)
+::%5 - variable name for decimal places (out)
+::%6 - variable name for measure (out)
+:finprepsize
+setlocal
+set "divider=" & set "dp=" & set "step10=!step10%~1!"
+if !stepB%~1! equ %GB% (
+	if !STotalSize%~1! geq %KB%%step10:~1% (
+		set "divider=%KB%%step10:~1%"
+		set "dp=100"
+		set "stepB%~1=TB"
+	) else (
+		set "divider=%step10%"
+		set "dp=%step10%"
+		set "stepB%~1=GB"
+	)
+) else if !stepB%~1! equ %MB% (
+	if !STotalSize%~1! geq %MB%%step10:~1% (
+		set "divider=%MB%%step10:~1%"
+		set "dp=100"
+		set "stepB%~1=TB"
+	) else if !STotalSize%~1! geq %KB%%step10:~1% (
+		set "divider=%KB%%step10:~1%"
+		set "dp=100"
+		set "stepB%~1=GB"
+	) else (
+		set "divider=%step10%"
+		set "dp=%step10%"
+		set "stepB%~1=MB"
+	)
+) else if !stepB%~1! equ %KB% (
+	if !STotalSize%~1! geq %MB%%step10:~1% (
+		set "divider=%MB%%step10:~1%"
+		set "dp=100"
+		set "stepB%~1=GB"
+	) else if !STotalSize%~1! geq %KB%%step10:~1% (
+		set "divider=%KB%%step10:~1%"
+		set "dp=100"
+		set "stepB%~1=MB"
+	) else (
+		set "divider=%step10%"
+		set "dp=%step10%"
+		set "stepB%~1=KB"
+	)
+) else if !stepB%~1! equ 1 (
+	if !STotalSize%~1! geq %GB% (
+		set "divider=%GB%"
+		set "dp=100"
+		set "stepB%~1=GB"
+	) else if !STotalSize%~1! geq %MB% (
+		set "divider=%MB%"
+		set "dp=100"
+		set "stepB%~1=MB"
+	) else if !STotalSize%~1! geq %KB% (
+		set "divider=%KB%"
+		set "dp=100"
+		set "stepB%~1=KB"
+	) else (
+		set "divider=1"
+		set "dp=1"
+		set "stepB%~1=B"
+	)
+)
 exit /b
 
 ::%1 - JPG|PNG|GIF
