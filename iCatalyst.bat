@@ -4,7 +4,8 @@
 
 setlocal enabledelayedexpansion
 set "name=Image Catalyst"
-set "version=2.5"
+set "version=2.6"
+set "spacebar=-------------------------------------------------------------------------------"
 if "%~1" equ "thrd" call:threadwork %4 %5 "%~2" "%~3" & exit /b
 if "%~1" equ "updateic" call:icupdate & exit /b
 if "%~1" equ "" call:helpmsg & exit /b
@@ -17,7 +18,6 @@ set "tmppath=%TEMP%\iCatalyst\"
 set "errortimewait=30"
 set "iclock=%TEMP%ic.lck"
 set "LOG=%scrpath%\iCatalyst"
-set "spacebar=-------------------------------------------------------------------------------"
 set "runic="
 call:runic "%name% %version%"
 if defined runic (
@@ -64,11 +64,11 @@ if defined nofile (
 	title [Error] %name% %version%
 	if exist "%tmppath%" 1>nul 2>&1 rd /s /q "%tmppath%"
 	1>&2 echo.%spacebar%
-	1>&2 echo. Application can not get access to files:
+	1>&2 echo. Application can not get access to the following files:
 	1>&2 echo.
 	for %%j in (%nofile%) do 1>&2 echo. - %%~j
 	1>&2 echo.
-	1>&2 echo. Check access to files and try again.
+	1>&2 echo. Check permissions and try again.
 	1>&2 echo.%spacebar%
 	call:dopause & exit /b
 )
@@ -78,7 +78,7 @@ set "rnd=%random%"
 if not exist "%tmppath%%rnd%\" (
 	set "tmppath=%tmppath%%rnd%"
 	1>nul 2>&1 md "%tmppath%%rnd%" || (
-		call:errormsg "Can not create temporary folder:^|%tmppath%%rnd%!"
+		call:errormsg "Can not create temporary directory:^|%tmppath%%rnd%!"
 		exit /b
 	)
 ) else (
@@ -139,7 +139,7 @@ if defined perr (
 	title [Error] %name% %version%
 	if exist "%tmppath%" 1>nul 2>&1 rd /s /q "%tmppath%"
 	1>&2 echo.%spacebar%
-	1>&2 echo. Unknown value of setting %perr%.
+	1>&2 echo. Unknown %perr% setting value.
 	call:helpmsg & exit /b
 )
 if "%png%" equ "0" if "%jpeg%" equ "0" if "%gif%" equ "0" goto:endsetcounters
@@ -151,13 +151,13 @@ if /i "%outdir%" equ "false" (set "outdir=" & set "nooutfolder=yes") else if /i 
 if not defined nooutfolder if not defined outdir (
 	call:clearscreen
 	title [Loading] %name% %version%
-	for /f "tokens=* delims=" %%a in ('dlgmsgbox "Image Catalyst" "Folder3" " " "Select the folder to save images. Click 'Cancel' to replace the original image in the optimized." ') do set "outdir=%%~a"
+	for /f "tokens=* delims=" %%a in ('dlgmsgbox "Image Catalyst" "Folder3" " " "Choose directory to save images to. Click 'Cancel' to replace original images with optimized versions." ') do set "outdir=%%~a"
 )
 if defined outdir (
 	if "!outdir:~-1!" neq "\" set "outdir=!outdir!\"
 	if not exist "!outdir!" (
 		1>nul 2>&1 md "!outdir!" || (
-		call:errormsg "Can not create folder for optimized files: !outdir!"
+		call:errormsg "Can not create directory for optimized files: !outdir!"
 		exit /b
 		)
 	)
@@ -195,7 +195,7 @@ if exist "%filelisterr%" (
 if %TotalNumPNG% equ 0 if %TotalNumJPG% equ 0 if %TotalNumGIF% equ 0 (
 	call:clearscreen
 	1>&2 echo.%spacebar%
-	1>&2 echo. Images not found. Please check images and try again.
+	1>&2 echo. No images found. Please check input and try again.
 	call:helpmsg
 	exit /b
 )
@@ -206,8 +206,8 @@ for /l %%a in (1,1,%thread%) do (
 )
 call:clearscreen
 echo.%spacebar%
-echo. File Name                      ^| Original  ^| Optimized ^| Savings  ^| %% Savings
-echo.                                ^|   Size    ^|   Size    ^|          ^|
+echo. File Name                      ^| Original ^| Optimized ^|  Savings  ^| %% Savings
+echo.                                ^| Size     ^| Size      ^|           ^|
 echo.%spacebar%
 if /i "%updatecheck%" equ "true" start "" /b cmd.exe /c ""%fullname%" updateic"
 call:setitle
@@ -268,7 +268,7 @@ call:runic "%~1"
 set "lastrunic=%runic%"
 if defined runic (
 	title [Waiting] %name% %version%
-	echo.Another process is running %name%. Waiting for shuting down.
+	echo.Another process %name% is running. Waiting for it to shut down.
 	call:runningcheck2 "%~1"
 )
 exit /b
@@ -348,7 +348,7 @@ set "optsize=          %optsize%"
 call:prepsize change
 set "change=           %change%"
 set "percent=          %~5%%"
-echo. !fn:~,%TFN%!^|%origsize:~-11%^|%optsize:~-11%^|%change:~-10%^|%percent:~-10%
+echo. !fn:~,%TFN%!^|%origsize:~-10%^|%optsize:~-11%^|%change:~-11%^|%percent:~-10%
 endlocal
 exit /b
 
@@ -495,9 +495,9 @@ exit /b
 call:clearscreen
 set "png="
 title [PNG] %name% %version%
-echo. -------------------------
-echo. Optimization setting PNG:
-echo. -------------------------
+echo. ----------------------
+echo. PNG optimization mode:
+echo. ----------------------
 echo.
 echo. [1] Advanced
 echo.
@@ -505,9 +505,9 @@ echo. [2] Xtreme
 echo.
 echo. [0] Skip
 echo.
-echo. ---------------------------------------
-set /p png="#Select setting and press Enter [0-2]: "
-echo. ---------------------------------------
+echo. ------------------------------------
+set /p png="#Select mode and press Enter [0-2]: "
+echo. ------------------------------------
 echo.
 if "%png%" neq "0" if "%png%" neq "1" if "%png%" neq "2" goto:png
 exit /b
@@ -516,9 +516,9 @@ exit /b
 call:clearscreen
 set "jpeg="
 title [JPEG] %name% %version%
-echo. --------------------------
-echo. Optimization setting JPEG:
-echo. --------------------------
+echo. ----------------------
+echo. JPEG otimization mode:
+echo. ----------------------
 echo.
 echo. [1] Baseline
 echo.
@@ -528,9 +528,9 @@ echo. [3] Default
 echo.
 echo. [0] Skip
 echo.
-echo. ---------------------------------------
-set /p jpeg="#Select setting and press Enter [0-3]: "
-echo. ---------------------------------------
+echo. ------------------------------------
+set /p jpeg="#Select mode and press Enter [0-3]: "
+echo. ------------------------------------
 echo.
 if "%jpeg%" neq "0" if "%jpeg%" neq "1" if "%jpeg%" neq "2" if "%jpeg%" neq "3" goto:jpeg
 exit /b
@@ -539,17 +539,17 @@ exit /b
 call:clearscreen
 set "gif="
 title [GIF] %name% %version%
-echo. -------------------------
-echo. Optimization setting GIF:
-echo. -------------------------
+echo. ----------------------
+echo. GIF optimization mode:
+echo. ----------------------
 echo.
 echo. [1] Default
 echo.
 echo. [0] Skip
 echo.
-echo. ---------------------------------------
-set /p gif="#Select setting and press Enter [0-1]: "
-echo. ---------------------------------------
+echo. ------------------------------------
+set /p gif="#Select mode and press Enter [0-1]: "
+echo. 
 echo.
 if "%gif%" neq "0" if "%gif%" neq "1" goto:gif
 exit /b
@@ -889,7 +889,7 @@ if %TotalNumErr% gtr 0 (
 	for %%a in ("%filelisterr%2*") do if %%~za gtr 0 (
 		if not defined isfirst (
 			echo.
-			echo. Images are not supported
+			echo. Images are not supported:
 			set "isfirst=1"
 		)
 		type "%%~a"
@@ -898,14 +898,14 @@ if %TotalNumErr% gtr 0 (
 	for %%a in ("%filelisterr%3*") do if %%~za gtr 0 (
 		if not defined isfirst (
 			echo.
-			echo. Images are not found
+			echo. Images are not found:
 			set "isfirst=1"
 		)
 		type "%%~a"
 	)
 	for %%a in ("%filelisterr%") do if %%~za gtr 0 (
 		echo.
-		echo. Images with characters
+		echo. Images with characters:
 		type "%%~a"
 		echo.%spacebar%
 	)
@@ -930,9 +930,11 @@ if /i "%updatecheck%" equ "true" (
 	if exist "%iculog%" (
 		call:readini "%iculog%"
 		if "%version%" neq "!ver!" (
-			echo. New version available %name% !ver!.
+			echo.
+			echo. New version available %name% !ver! 
+			echo.
+			echo. !url!
 			echo.%spacebar%
-			start "" !url!
 		)
 		1>nul 2>&1 del /f /q "%iculog%"
 	)
@@ -1091,42 +1093,42 @@ exit /b
 title [Manual] %name% %version%
 1>&2 (
 	echo.%spacebar%
-	echo. Image Catalyst - optimization / compression images PNG, JPEG and GIF lossless
+	echo. Image Catalyst - lossless PNG, JPEG and GIF image optimization / compression
 	echo.
-	echo. Recommended to examine ReadMe
+	echo. Please check README for more details
 	echo.
-	echo. call iCatalyst.bat [options] [add folders \ add files]
+	echo. call iCatalyst.bat [options] [add directories \ add files]
 	echo.
 	echo. Options:
 	echo.
-	echo. /png:#	Optimization settings PNG ^(Non-Interlaced^):
-	echo.	1 - Compression level - Advanced
-	echo.	2 - Compression level - Xtreme
+	echo. /png:#	PNG optimization mode ^(Non-Interlaced^):
+	echo.	1 - Compression level - Xtreme
+	echo.	2 - Compression level - Advanced
 	echo.	0 - Skip ^(default^)
 	echo.
-	echo. /jpg:#	Optimization settings JPEG:
+	echo. /jpg:#	JPEG optimization mode:
 	echo.	1 - Encoding Process - Baseline
 	echo.	2 - Encoding Process - Progressive
-	echo.	3 - uses settings of original images
+	echo.	3 - use mode of original image
 	echo.	0 - Skip ^(default^)
 	echo.
-	echo. /gif:#	Optimization settings GIF:
-	echo.	1 - uses settings of original images
+	echo. /gif:#	GIF optimization mode:
+	echo.	1 - use settings of original image
 	echo.	0 - Skip ^(default^)
 	echo.
-	echo. "/outdir:#" Settings save optimized images:
-	echo.	true  - open dialog box for saving images ^(default^)
-	echo.	false - replace the original image on optimized
-	echo.	"full path to folder" - specify the folder to save images.
-	echo.	for example: "/outdir:C:\temp", if the destination folder does not 
-	echo.	exist, it will be created automatically.
+	echo. "/outdir:#" image saving options:
+	echo.	true  - replace original image with optimized
+	echo.	false - open dialog box for saving images ^(default^)
+	echo.	"full path to directory" - specify directory to save images to.
+	echo.	for example: "/outdir:C:\temp". If the destination directory
+	echo.	does not exist, it will be created automatically.
 	echo.
-	echo. Add folders \ Add files:
-	echo. - Specify the full path to the images and / or folders with images.
+	echo. Add directories \ Add files:
+	echo. - Specify full image paths and / or paths to directories containing images.
 	echo.   For example: "C:\Images" "C:\logo.png"
-	echo. - The full paths of images should not be special characters. 
-	echo.   For example: "&", "%%", "(", ")" etc.
-	echo. - The application optimizes images in nested subfolders.
+	echo. - Full image paths should not contain any special characters such as
+	echo.   "&", "%%", "(", ")" etc.
+	echo. - Images in sub-directories are optimized recursively.
 	echo.
 	echo. Examples:
 	echo. call iCatalyst.bat /gif:1 "/outdir:C:\photos" "C:\images"
