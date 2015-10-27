@@ -95,8 +95,8 @@ for %%a in (JPG PNG GIF) do (
 	set "change%%a=0"
 	set "perc%%a=0"
 	set "step%%a=0"
-	set "step10%%a=100"
-	set "stepB%%a=1024"
+	set "step10%%a=1000"
+	set "stepB%%a=1"
 )
 set "png="
 set "jpeg="
@@ -338,10 +338,12 @@ set "fn="
 call:cropfilename fn "%~1" %TFN%
 set "origsize=%~2"
 set "optsize=%~3"
-set "change=%~4"
+::set "change=%~4"
+::call:calcperc %~z1 %change% perc
 call:prepsize origsize
-set "origsize=          %origsize%"
 call:prepsize optsize
+set /a "change=%~4"
+set "origsize=          %origsize%"
 set "optsize=          %optsize%"
 call:prepsize change
 set "change=           %change%"
@@ -350,14 +352,37 @@ echo. !fn:~,%TFN%!^|%origsize:~-11%^|%optsize:~-11%^|%change:~-10%^|%percent:~-1
 endlocal
 exit /b
 
-::%1 - variable name
+::%1 - variable name for number (in/out)
+::%2 - cariable name for measure (out)
 :prepsize
+setlocal
+set "var=!%~1!"
 set "sign="
-if !%~1! lss 0 (set "sign=-" & set /a "%~1*=-1")
-if !%~1! geq %GB% (call:division %~1 %GB% 100 & set "%~1=%sign%!%~1! GB" & exit /b)
-if !%~1! geq %MB% (call:division %~1 %MB% 100 & set "%~1=%sign%!%~1! MB" & exit /b)
-if !%~1! geq %KB% (call:division %~1 %KB% 100 & set "%~1=%sign%!%~1! KB" & exit /b)
-set "%~1=%sign%!%~1! B"
+if "%var:~,1%" equ "-" (set "sign=-" & set "var=%var:~1%")
+set "meas=B"
+if %var% geq %GB% (call:division var %GB% 100 & set "meas=GB" & goto:finprepsize)
+if %var% geq %MB% (call:division var %MB% 100 & set "meas=MB" & goto:finprepsize)
+if %var% geq %KB% (call:division var %KB% 100 & set "meas=KB" & goto:finprepsize)
+:finprepsize
+endlocal & set "%~1=%sign%%var%" & set "%~2=%meas%"
+exit /b
+
+::%1 - number of 100%
+::%2 - number, which is necessary to calculate the percentage
+::%3 - variable name for save result
+:calcperc
+setlocal
+::echo on
+echo.%~0: %*
+set "change=%~2"
+set "sign="
+if "%change:~,1%" equ "-" (set "sign=-" & set "change=%change:~1%")
+set /a "perc=%change%*100/%~1" 2>nul
+set /a "fract=%change%*100%%%~1*100/%~1" 2>nul
+set /a "perc=%perc%*100+%fract%"
+call:division perc 100 100
+endlocal & set "%~3=%sign%%perc%"
+::echo off
 exit /b
 
 ::%1 - file name
@@ -770,16 +795,17 @@ exit /b 0
 ::%3 - thread number
 :savelog
 setlocal
-set /a "change=%~z1-%2"
-set "sign="
-if "%change:~,1%" equ "-" (set "sign=-" & set "change=%change:~1%")
-set /a "perc=%change%*100/%2" 2>nul
-set /a "fract=%change%*100%%%2*100/%2" 2>nul
-set "perc=%perc%%fract%"
-call:division perc 100 100
->>"%logfile2%" echo.%~1;%2;%~z1;%sign%%change%;%sign%%perc%;ok
+echo.%~0: %~2	%~z1
+set "ts=%~2"
+set "is=%~z1"
+call:division2 ts 1024 100
+call:division2 is 1024 100
+set /a "change=%is%-%ts%"
+call:calcperc %ts% %change% perc
+set /a "change=%~2-%~z1"
+>>"%logfile2%" echo.%~1;%~2;%~z1;%change%;%perc%;ok
 if %thread% equ 1 (
-	call:printfileinfo "%~1" %2 %~z1 %sign%%change% %sign%%perc%
+	call:printfileinfo "%~1" %2 %~z1 %change% %perc%
 )
 endlocal
 exit /b
@@ -922,8 +948,10 @@ exit /b
 set /a "TotalSize%~1+=%~2"
 set /a "ImageSize%~1+=%~3"
 if !ImageSize%~1! lss %BYTECONV% if !TotalSize%~1! lss %BYTECONV% exit /b
-call:division2 TotalSize%~1 !stepB%~1! !step10%~1!
-call:division2 ImageSize%~1 !stepB%~1! !step10%~1!
+if !stepB%~1! gtr 1 (
+	call:division2 TotalSize%~1 !stepB%~1! !step10%~1!
+	call:division2 ImageSize%~1 !stepB%~1! !step10%~1!
+)
 set /a "STotalSize%~1+=!TotalSize%~1!"
 set /a "SImageSize%~1+=!ImageSize%~1!"
 set "TotalSize%~1=0"
@@ -936,7 +964,7 @@ if !step%~1! equ 0 (
 	set /a "stepB%~1*=%KB%"
 	call:division2 STotalSize%~1 %KB% 100
 	call:division2 SImageSize%~1 %KB% 100
-) else (
+) else if !stepB%~1! neq 1 (
 	set /a "step10%~1/=10"
 	set /a "STotalSize%~1/=10"
 	set /a "SImageSize%~1/=10"
@@ -947,17 +975,19 @@ exit /b
 ::%1 - JPG|PNG|GIF
 :fincalc
 if !TotalSize%~1! equ 0 if !STotalSize%~1! equ 0 exit /b
-call:division2 TotalSize%~1 !stepB%~1! !step10%~1!
-call:division2 ImageSize%~1 !stepB%~1! !step10%~1!
+if !stepB%~1! gtr 1 (
+	call:division2 TotalSize%~1 !stepB%~1! !step10%~1!
+	call:division2 ImageSize%~1 !stepB%~1! !step10%~1!
+)
 set /a "STotalSize%~1+=!TotalSize%~1!"
 set /a "SImageSize%~1+=!ImageSize%~1!"
 set "TotalSize%~1=0"
 set "ImageSize%~1=0"
 set /a "change%~1=(!SImageSize%~1!-!STotalSize%~1!)" 2>nul
-::echo.%~0:	!STotalSize%~1!	!SImageSize%~1!	!step%~1!	!step10%~1!	!stepB%~1!
 set "divider=" & set "dp=" & set "step10=!step10%~1!"
-if %step10% equ 1 set "step10="
-if !stepB%~1! geq %GB% (
+::if %step10% equ 1 set "step10="
+echo.%~0:	!STotalSize%~1!	!SImageSize%~1!	!change%~1!	!step%~1!	!step10%~1!	!stepB%~1!	step10="%step10%"
+if !stepB%~1! equ %GB% (
 	if !STotalSize%~1! geq %KB%%step10:~1% (
 		set "divider=%KB%%step10:~1%"
 		set "dp=100"
@@ -995,19 +1025,37 @@ if !stepB%~1! geq %GB% (
 		set "dp=%step10%"
 		set "stepB%~1=KB"
 	)
+) else if !stepB%~1! equ 1 (
+	if !STotalSize%~1! geq %GB% (
+		set "divider=%GB%"
+		set "dp=100"
+		set "stepB%~1=GB"
+	) else if !STotalSize%~1! geq %MB% (
+		set "divider=%MB%"
+		set "dp=100"
+		set "stepB%~1=MB"
+	) else if !STotalSize%~1! geq %KB% (
+		set "divider=%KB%"
+		set "dp=100"
+		set "stepB%~1=KB"
+	) else (
+		set "divider=1"
+		set "dp=1"
+		set "stepB%~1=B"
+	)
 )
 set "change=!change%~1!"
 set "ST=!STotalSize%~1!"
-call:division2 ST %divider% %dp%
-call:division2 change %divider% %dp%
-set /a "perc%~1=%change%*100/%ST%" 2>nul
-set /a "fract=%change%*100%%%ST%*100/%ST%" 2>nul
-set /a "perc%~1=!perc%~1!*100+%fract%" 2>nul
-call:division perc%~1 100 100
-call:division STotalSize%~1 %divider% %dp%
-call:division SImageSize%~1 %divider% %dp%
-call:division change%~1 %divider% %dp%
-::echo.%~0:	!STotalSize%~1!	!SImageSize%~1!	!step%~1!	!step10%~1!	!stepB%~1!	%divider%	%dp%
+if %divider% gtr 1 (
+	call:division2 ST %divider% %dp%
+	call:division2 change %divider% %dp%
+	call:division STotalSize%~1 %divider% %dp%
+	call:division SImageSize%~1 %divider% %dp%
+	call:division change%~1 %divider% %dp%
+)
+call:calcperc %ST% %change% perc%~1
+echo.%~0: %ST%	%change%	!stepB%~1!	%divider%	%dp%
+echo.%~0: !STotalSize%~1!	!SImageSize%~1!	!change%~1!	!step%~1!	!step10%~1!	!stepB%~1!	%divider%	%dp%
 set "divider=" & set "dp=" & set "step10=" & set "change=" & set "ST="
 exit /b
 
@@ -1028,7 +1076,7 @@ set "F5=           !perc%~1!"
 set "F2=           !STotalSize%~1! !stepB%~1!"
 set "F3=           !SImageSize%~1! !stepB%~1!"
 set "F4=           !change%~1! !stepB%~1!"
-echo. !F1:~,%TFN%!^|!F2:~-11!^|!F3:~-11!^|!F4:~-10!^|%F5:~-10%%%
+echo. !F1:~,%TFN%!^|!F2:~-11!^|!F3:~-11!^|!F4:~-10!^|%F5:~-9%%%
 echo.%spacebar%
 endlocal & exit /b
 
