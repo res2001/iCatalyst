@@ -1113,7 +1113,7 @@ set "F5=           !perc%~1!"
 set "F2=           !STotalSize%~1!"
 set "F3=           !SImageSize%~1!"
 set "F4=           !change%~1!"
-echo. !F1:~,%TFN%!^|!F2:~-11!^|!F3:~-11!^|!F4:~-10!^|%F5:~-9%%%
+echo. !F1:~,%TFN%!^|!F2:~-10!^|!F3:~-11!^|!F4:~-11!^|%F5:~-9%%%
 echo.%spacebar%
 endlocal & exit /b
 
