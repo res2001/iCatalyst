@@ -41,7 +41,7 @@ for %%a in (
 	"%sconfig%config.ini"
 	"%apps%advdef.exe"
 	"%apps%deflopt.exe"
-	"%apps%dlgmsgbox.exe"
+	"%apps%browsefolder.exe"
 	"%apps%gifsicle.exe"
 	"%apps%jpegstripper.exe"
 	"%apps%jpginfo.exe"
@@ -97,6 +97,7 @@ for %%a in (JPG PNG GIF) do (
 	set "step%%a=0"
 	set "step10%%a=1000"
 	set "stepB%%a=1"
+	set "%%aflag=%tmppath%\%%a.flag"
 )
 set "png="
 set "jpeg="
@@ -151,7 +152,7 @@ if /i "%outdir%" equ "false" (set "outdir=" & set "nooutfolder=yes") else if /i 
 if not defined nooutfolder if not defined outdir (
 	call:clearscreen
 	title [Loading] %name% %version%
-	for /f "tokens=* delims=" %%a in ('dlgmsgbox "Image Catalyst" "Folder3" " " "Choose directory to save images to. Click 'Cancel' to replace original images with optimized versions." ') do set "outdir=%%~a"
+	for /f "tokens=* delims=" %%a in ('browsefolder.exe /Title:"Image Catalyst" /Description:"Choose directory to save images to. Click 'Cancel' to replace original images with optimized versions." /block:window /center:window /flag:81') do set "outdir=%%~a"
 )
 if defined outdir (
 	if "!outdir:~-1!" neq "\" set "outdir=!outdir!\"
@@ -165,12 +166,24 @@ if defined outdir (
 ) else (
 	set "outdirparam="
 )
-call:clearscreen
+start "" /b cscript //nologo //E:JScript "%scripts%filter.js" %oparam% %outdirparam% %* 1>"%filelist%" 2>"%filelisterr%" 5>"%filelisterr%5"
 title [Loading] %name% %version%
-echo.%spacebar%
-echo. Loading. Please wait...
-echo.%spacebar%
-cscript //nologo //E:JScript "%scripts%filter.js" %oparam% %outdirparam% %* 1>"%filelist%" 2>"%filelisterr%"
+set "isclear=yes"
+:waitfilter
+if defined isclear (
+	call:clearscreen
+	echo.%spacebar%
+	echo. Loading. Please wait...
+	echo.%spacebar%
+	set "isclear="
+)
+call:waitrandom 1000
+if exist "%PNGflag%" if not defined png (call:png & 1>nul 2>&1 del /f/q "%PNGflag%" & set "isclear=yes")
+if exist "%JPGflag%" if not defined jpeg (call:jpeg & 1>nul 2>&1 del /f/q "%JPGflag%" & set "isclear=yes")
+if exist "%GIFflag%" if not defined gif (call:gif & 1>nul 2>&1 del /f/q "%GIFflag%" & set "isclear=yes")
+1>nul 2>&1 del /f/q "%filelisterr%5"
+if exist "%filelisterr%5" goto:waitfilter
+set "isclear="
 
 :setcounters
 if exist "%filelist%" (
