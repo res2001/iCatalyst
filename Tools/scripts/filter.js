@@ -1,10 +1,12 @@
 if(WScript.Arguments.length == 0) WScript.quit(-1);
-
 var fso = new ActiveXObject("Scripting.FileSystemObject");
+var WshShell = new ActiveXObject("WScript.Shell");
+var tmppath = WshShell.Environment("Process").Item("tmppath");
+if(tmppath == "" || !fso.FolderExists(tmppath))
+	WScript.Quit(1);
 var re = new RegExp("[^a-zà-ÿ¸¨0-9_:\\.,~@#$\\-+=\\\\/{}\\[\\]'`? ]","ig");
 var rd = new RegExp("[\\u2191]","ig");
 var rp = new RegExp("\"","ig");
-var ri;
 var basepath, basepathdos, ret, outfirst;
 var argn, outdirorig, outdir, isstdin;
 
@@ -26,34 +28,22 @@ if(argn.Exists("Outdir")) {
 	}
 }
 
-var str = "", isjpg = false, ispng = false, isgif = false, num;
+var JPG = 0, PNG = 1, GIF = 2;
+var rfile = new Array(
+	{name: "JPG", ri: new RegExp("\\.jp(g|eg?)$","ig"), iswork: false, isfirst: false},
+	{name: "PNG", ri: new RegExp("\\.png$","ig"), iswork: false, isfirst: false},
+	{name: "GIF", ri: new RegExp("\\.gif$","ig"), iswork: false, isfirst: false});
+var num;
 
-if(argn.Exists("JPG")) if(argn.Item("JPG").length > 0) {
-	num = parseInt(argn.Item("JPG"));
-	if(!isNaN(num) && num>=1 && num<=3) {
-		isjpg=true;
-		str = "|jp(g|e|eg)";
+for(var i in rfile) {
+	if(argn.Exists(rfile[i].name)) if(argn.Item(rfile[i].name).length > 0) {
+		num = parseInt(argn.Item(rfile[i].name));
+		if(!isNaN(num) && num>=1 && num<=3)
+			rfile[i].iswork=true;
 	}
 }
 
-if(argn.Exists("PNG")) if(argn.Item("PNG").length > 0) {
-	num = parseInt(argn.Item("PNG"));
-	if(!isNaN(num) && num>=1 && num<=2) {
-		ispng=true;
-		str += "|png";
-	}
-}
-
-if(argn.Exists("GIF")) if(argn.Item("GIF").length > 0) {
-	num = parseInt(argn.Item("GIF"));
-	if(!isNaN(num) && num==1) {
-		isgif=true;
-		str += "|gif";
-	}
-}
-
-if (!isjpg && !ispng && ! isgif) WScript.quit(0);
-ri = new RegExp("\\.("+str.substr(1)+")$","ig");
+if (!rfile[JPG].iswork && !rfile[PNG].iswork && !rfile[GIF].iswork) WScript.quit(0);
 if(argn.Exists("IsStdIn")) isstdin = argn.Item("IsStdIn").toUpperCase();
 ret = 0;
 
@@ -78,7 +68,7 @@ function WorkBasepath() {
 		return 0;
 	}
 	basepath = fso.GetAbsolutePathName(basepath);
-	if(fso.FileExists(basepath) && basepath.match(ri)) {
+	if(fso.FileExists(basepath) && FileMatch(basepath)) {
 		ret += workv(basepath);
 	} else if(fso.FolderExists(basepath)) {
 		if(outdirorig!="") {
@@ -100,13 +90,28 @@ function DirWork(dir) {
 	f = fso.GetFolder(dir);
 	fc = new Enumerator(f.files);
 	for (; !fc.atEnd(); fc.moveNext()) {
-		if(fc.item().Path.match(ri)) ret += workv(fc.item().Path);
+		if(FileMatch(fc.item().Path)) 
+			ret += workv(fc.item().Path);
 	}
 	fc = new Enumerator(f.SubFolders);
 	for (; !fc.atEnd(); fc.moveNext()) {
 		ret += DirWork(fc.item().Path);
 	}
 	return(ret);
+}
+
+function FileMatch(fname) {
+	for(var i in rfile)
+		if(rfile[i].iswork && fname.match(rfile[i].ri)) {
+			if(!rfile[i].isfirst) {
+				var a = fso.CreateTextFile(fso.GetAbsolutePathName(tmppath+"\\"+rfile[i].name+".flag"), true);
+				a.WriteLine("Yes");
+				a.Close();
+				rfile[i].isfirst = true;
+			}
+			return true;
+		}
+	return false;
 }
 
 function CreateTree(p) {
@@ -118,41 +123,6 @@ function CreateTree(p) {
 		if(CreateTree(owner)) return(-2);
 	fso.CreateFolder(p);
 	return(0);
-}
-
-function work(str) {
-	var p, tp, tf;
-	if(str.match(rd)) {
-		WScript.StdErr.WriteLine(" " + sDOS2Win(basepath,true));
-		return 0;
-	}
-	p = fso.GetParentFolderName(str);
-	if(outdirorig.toUpperCase() == fso.GetAbsolutePathName(p).toUpperCase()) 
-		outdir = "";
-	else
-		outdir = outdirorig;
-	if(!str.match(re) && !str.match(rd)) {
-		tf = fso.GetFileName(str);
-		if(outdir!="") {
-			if(str.toUpperCase()==basepath.toUpperCase()) {
-				tp = outdir;
-			} else {
-				tp = outfirst + p.substr(basepath.length);
-				if(CreateTree(tp)) {
-					WScript.StdErr.WriteLine(" " + sDOS2Win(str,true));
-					return 0;
-				}
-			}
-			filecopy(str,fso.BuildPath(tp,tf));
-		} else {
-			tp = p;
-		}
-		WScript.StdOut.WriteLine(sDOS2Win(fso.BuildPath(tp,tf),true));
-		return 1;
-	} else {
-		WScript.StdErr.WriteLine(" " + sDOS2Win(str,true));
-		return 0;
-	}
 }
 
 function workv(str) {
