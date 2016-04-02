@@ -97,7 +97,6 @@ for %%a in (JPG PNG GIF) do (
 	set "step%%a=0"
 	set "step10%%a=1000"
 	set "stepB%%a=1"
-	set "%%aflag=%tmppath%\%%a.flag"
 )
 set "png="
 set "jpeg="
@@ -105,6 +104,7 @@ set "gif="
 set "perr="
 set "stime="
 set "ftime="
+set "params="
 set "updateurl=http://x128.ho.ua/update.ini"
 set "configpath=%~dp0\Tools\config.ini"
 set "logfile=%tmppath%\Images"
@@ -114,6 +114,8 @@ set "countPNG=%tmppath%\countpng"
 set "countJPG=%tmppath%\countjpg"
 set "countGIF=%tmppath%\countgif"
 set "filelist=%tmppath%\filelist"
+set "filelist1=%tmppath%\filelist1"
+set "paramfile=%tmppath%\param.txt"
 ::For Images with characters		-	%filelisterr%
 ::For Images are already optimized	-	%filelisterr%1
 ::For Images are not supported		-	%filelisterr%2<num thread>
@@ -127,27 +129,32 @@ set /a "GB=MB*KB"
 ::restrictions in bytes (default - 100Mb)
 set /a "BYTECONV=100*%MB%"
 
-set "thread=" & set "updatecheck=" & set "outdir=" & set "nooutfolder="
+set "thread=" & set "updatecheck=" & set "outdir=" & set "nooutfolder=" & set "perr="
 set "jpegtags=" & set "xtreme=" & set "advanced=" & set "pngtags=" & set "giftags="
 call:readini "%configpath%"
 call:sethread %thread%
 set "updatecheck=%update%" & set "update="
 if /i "%giftags%" equ "true" (set "giftags=--no-comments --no-extensions --no-names") else (set "giftags=")
 call set "outdir=%outdir%"
-call:paramcontrol %*
+if defined outdir set oparam="/Outdir:%outdir%"
+cscript //nologo //E:JScript "%scripts%pfilter.js" %* %oparam% 1>"%paramfile%" 2>"%filelisterr%"
+call:readini "%paramfile%"
 if defined perr (
-	call:clearscreen
-	title [Error] %name% %version%
-	if exist "%tmppath%" 1>nul 2>&1 rd /s /q "%tmppath%"
-	1>&2 echo.%spacebar%
-	1>&2 echo. Unknown %perr% setting value.
-	call:helpmsg & exit /b
+	set "perr=%perr:~,-1%"
+	set "perr=!perr:;=, !"
+	call:errormsg "Unknown !perr! setting^(s^) value."
+	exit /b
 )
+if not defined params for %%a in ("%filelisterr%") do if %%~za neq 0 (
+	1>&2 echo. Unknown parameters:
+	1>&2 type "%%~a"
+	call:errormsg 
+	exit /b
+)
+1>nul 2>&1 del /f/q "%paramfile%"
 if "%png%" equ "0" if "%jpeg%" equ "0" if "%gif%" equ "0" goto:endsetcounters
+call:checkparams %params%
 set "oparam="
-if not defined jpeg if not defined png if not defined gif (
-	set "oparam=/JPG:1 /PNG:1 /GIF:1"
-)
 if /i "%outdir%" equ "false" (set "outdir=" & set "nooutfolder=yes") else if /i "%outdir%" equ "true" set "outdir="
 if not defined nooutfolder if not defined outdir (
 	call:clearscreen
@@ -166,32 +173,24 @@ if defined outdir (
 ) else (
 	set "outdirparam="
 )
-start "" /b cscript //nologo //E:JScript "%scripts%filter.js" %oparam% %outdirparam% %* 1>"%filelist%" 2>"%filelisterr%" 5>"%filelisterr%5"
 title [Loading] %name% %version%
-set "isclear=yes"
-:waitfilter
-if defined isclear (
-	call:clearscreen
-	echo.%spacebar%
-	echo. Loading. Please wait...
-	echo.%spacebar%
-	set "isclear="
-)
-call:waitrandom 1000
-if exist "%PNGflag%" if not defined png (call:png & 1>nul 2>&1 del /f/q "%PNGflag%" & set "isclear=yes")
-if exist "%JPGflag%" if not defined jpeg (call:jpeg & 1>nul 2>&1 del /f/q "%JPGflag%" & set "isclear=yes")
-if exist "%GIFflag%" if not defined gif (call:gif & 1>nul 2>&1 del /f/q "%GIFflag%" & set "isclear=yes")
-1>nul 2>&1 del /f/q "%filelisterr%5"
-if exist "%filelisterr%5" goto:waitfilter
-set "isclear="
-
+call:clearscreen
+echo.%spacebar%
+echo. Loading. Please wait...
+echo.%spacebar%
+1>nul 2>&1 del /f /q "%filelist%"
+for %%a in (%params%) do (
+	call:makefilelist %%a 1>"%filelist1%" 2>>"%filelisterr%"
+	for %%b in ("%filelist1%") do if "%%~zb" neq "0" (
+		cscript //nologo //E:JScript "%scripts%filter.js" "/BasePath:%%~a" <"%filelist1%" 1>>"%filelist%" 2>>"%filelisterr%"
+))
 :setcounters
 if exist "%filelist%" (
-	if "%png%" neq "0" for /f "tokens=*" %%a in ('findstr /i /e ".png"  "%filelist%" ^| find /i /c ".png" 2^>nul') do set /a "TotalNumPNG+=%%a"
-	if "%jpeg%" neq "0" for /f "tokens=*" %%a in ('findstr /i /e ".jpg"  "%filelist%" ^| find /i /c ".jpg" 2^>nul') do set /a "TotalNumJPG+=%%a"
-	if "%jpeg%" neq "0" for /f "tokens=*" %%a in ('findstr /i /e ".jpe"  "%filelist%" ^| find /i /c ".jpe" 2^>nul') do set /a "TotalNumJPG+=%%a"
+	if "%png%" neq "0" for /f "tokens=*" %%a in ('findstr /i /e ".png"   "%filelist%" ^| find /i /c ".png" 2^>nul')  do set /a "TotalNumPNG+=%%a"
+	if "%jpeg%" neq "0" for /f "tokens=*" %%a in ('findstr /i /e ".jpg"  "%filelist%" ^| find /i /c ".jpg" 2^>nul')  do set /a "TotalNumJPG+=%%a"
+	if "%jpeg%" neq "0" for /f "tokens=*" %%a in ('findstr /i /e ".jpe"  "%filelist%" ^| find /i /c ".jpe" 2^>nul')  do set /a "TotalNumJPG+=%%a"
 	if "%jpeg%" neq "0" for /f "tokens=*" %%a in ('findstr /i /e ".jpeg" "%filelist%" ^| find /i /c ".jpeg" 2^>nul') do set /a "TotalNumJPG+=%%a"
-	if "%gif%" neq "0" for /f "tokens=*" %%a in ('findstr /i /e ".gif"  "%filelist%" ^| find /i /c ".gif" 2^>nul') do set /a "TotalNumGIF+=%%a"
+	if "%gif%" neq "0" for /f "tokens=*" %%a in ('findstr /i /e ".gif"   "%filelist%" ^| find /i /c ".gif" 2^>nul')  do set /a "TotalNumGIF+=%%a"
 )
 if %TotalNumPNG% gtr 0 (if not defined png call:png) else set "png=0"
 if %TotalNumJPG% gtr 0 (if not defined jpeg call:jpeg) else set "jpeg=0"
@@ -244,37 +243,62 @@ call:setitle
 call:end
 call:dopause & exit /b
 
-:paramcontrol
+:checkparams
 if "%~1" equ "" exit /b
-set "tt=%~1"
-if "!tt:~,1!" equ "/" (
-	if /i "!tt:~1,4!" equ "JPG:" (
-		set "jpeg=!tt:~5!"
-		if "!jpeg!" neq "0" if "!jpeg!" neq "1" if "!jpeg!" neq "2" if "!jpeg!" neq "3" (
-			set "jpeg=0" & set "perr=JPG"
-		)
-		if not defined png set "png=0"
-		if not defined gif set "gif=0"
-	) else if /i "!tt:~1,4!" equ "PNG:" (
-		set "png=!tt:~5!"
-		if "!png!" neq "0" if "!png!" neq "1" if "!png!" neq "2" (
-			set "png=0" & set "perr=PNG"
-		)
-		if not defined jpeg set "jpeg=0"
-		if not defined gif set "gif=0"
-	) else if /i "!tt:~1,4!" equ "GIF:" (
-		set "gif=!tt:~5!"
-		if "!gif!" neq "0" if "!gif!" neq "1" (
-			set "gif=0" & set "perr=GIF"
-		)
-		if not defined png set "png=0"
-		if not defined jpeg set "jpeg=0"
-	) else if /i "!tt:~1,7!" equ "Outdir:" (
-		set "outdir=!tt:~8!"
-	)
+set "p=%~1"
+if exist "%p:~1%" (
+	if /i "%p:~,1%" equ "f" call:checkfile "%p:~1%"
+	if /i "%p:~,1%" equ "d" call:checkdir "%p:~1%"
 )
 shift
-goto:paramcontrol
+goto:checkparams
+
+:checkfile
+if "%jpeg%" neq "0" (
+	if /i "%~x1" equ ".jpg"  call:checkfiletype jpeg "%~1"
+	if /i "%~x1" equ ".jpe"  call:checkfiletype jpeg "%~1"
+	if /i "%~x1" equ ".jpeg" call:checkfiletype jpeg "%~1"
+)
+if "%png%" neq "0" if /i "%~x1" equ ".png" call:checkfiletype png "%~1"
+if "%gif%" neq "0" if /i "%~x1" equ ".gif" call:checkfiletype gif "%~1"
+exit /b
+	
+::%1 - jpeg | png | gif
+::%2 - full path to the file
+:checkfiletype
+if not defined %~1 call:%~1
+exit /b
+
+:checkdir
+if not defined jpeg call:checkmask %1 ""*.jpg" "*.jpe?"" && call:jpeg
+if not defined png  call:checkmask %1 "*.png" && call:png
+if not defined gif  call:checkmask %1 "*.gif" && call:gif
+exit /b
+
+:checkmask
+for /r "%~1" %%i in (%~2) do exit /b 0
+exit /b 1
+
+:makefilelist
+if "%~1" equ "" exit /b
+set "p=%~1"
+if exist "%p:~1%" (
+	if /i "%p:~,1%" equ "f" echo.%p:~1%
+	if /i "%p:~,1%" equ "d" call:dir2list "%p:~1%"
+)
+shift
+goto:checkparams
+
+:dir2list
+setlocal
+set "mask="
+if "%jpeg%" neq "0" set mask="%~1\*.jpg" "%~1\*.jpe?"
+if "%png%"  neq "0" set mask=%mask% "%~1\*.png"
+if "%gif%"  neq "0" set mask=%mask% "%~1\*.gif"
+if not defined mask exit /b
+dir /a-d /b /s %mask%
+endlocal
+exit /b
 
 :runningcheck
 call:runic "%~1"
@@ -1129,7 +1153,7 @@ endlocal & exit /b
 :readini
 for /f "usebackq tokens=1,* delims== " %%a in ("%~1") do (
 	set param=%%a
-	if "!param:~,1!" neq ";" if "!param:~,1!" neq "[" set "%%~a=%%~b"
+	if "!param:~,1!" neq ";" if "!param:~,1!" neq "[" set "%%a=%%b"
 )
 exit /b
 
