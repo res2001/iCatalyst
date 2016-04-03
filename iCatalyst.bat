@@ -152,27 +152,24 @@ if not defined params for %%a in ("%filelisterr%") do if %%~za neq 0 (
 	exit /b
 )
 1>nul 2>&1 del /f/q "%paramfile%"
-if "%png%" equ "0" if "%jpeg%" equ "0" if "%gif%" equ "0" goto:endsetcounters
-call:checkparams %params%
 set "oparam="
+
+call:checkparams %params%
+if "%png%" equ "0" if "%jpeg%" equ "0" if "%gif%" equ "0" goto:endsetcounters
 if /i "%outdir%" equ "false" (set "outdir=" & set "nooutfolder=yes") else if /i "%outdir%" equ "true" set "outdir="
 if not defined nooutfolder if not defined outdir (
 	call:clearscreen
 	title [Loading] %name% %version%
-	for /f "tokens=* delims=" %%a in ('browsefolder.exe /Title:"Image Catalyst" /Description:"Choose directory to save images to. Click 'Cancel' to replace original images with optimized versions." /block:window /center:window /flag:81') do set "outdir=%%~a"
+	for /f "tokens=* delims=" %%a in ('browsefolder.exe /CurPath:desktop /Title:"Image Catalyst" /Description:"Choose directory to save images to. Click 'Cancel' to replace original images with optimized versions." /block:window /center:window /flag:81') do set "outdir=%%~a"
 )
 if defined outdir (
 	if "!outdir:~-1!" neq "\" set "outdir=!outdir!\"
 	if not exist "!outdir!" (
 		1>nul 2>&1 md "!outdir!" || (
-		call:errormsg "Can not create directory for optimized files: !outdir!"
-		exit /b
-		)
-	)
-	for /f "tokens=* delims=" %%a in ("!outdir!") do set outdirparam="/Outdir:%%~a"
-) else (
-	set "outdirparam="
-)
+			call:errormsg "Can not create directory for optimized files: !outdir!"
+			exit /b
+)))
+
 title [Loading] %name% %version%
 call:clearscreen
 echo.%spacebar%
@@ -206,9 +203,7 @@ if exist "%filelisterr%" (
 :endsetcounters
 if %TotalNumPNG% equ 0 if %TotalNumJPG% equ 0 if %TotalNumGIF% equ 0 (
 	call:clearscreen
-	1>&2 echo.%spacebar%
-	1>&2 echo. No images found. Please check input and try again.
-	call:helpmsg
+	call:errormsg "No images found. Please check input and try again."
 	exit /b
 )
 for /l %%a in (1,1,%thread%) do (
@@ -244,35 +239,37 @@ call:end
 call:dopause & exit /b
 
 :checkparams
-if "%~1" equ "" exit /b
+set "ispng=%png%" & set "isjpeg=%jpeg%" & set "isgif=%gif%"
+:checkparams1
+if "%~1" equ "" (
+	if /i "%ispng%" equ "yes" call:png
+	if /i "%isjpeg%" equ "yes" call:jpeg
+	if /i "%isgif%" equ "yes" call:gif
+	set "ispng=" & set "isjpeg=" & set "isgif="
+	exit /b
+)
 set "p=%~1"
 if exist "%p:~1%" (
 	if /i "%p:~,1%" equ "f" call:checkfile "%p:~1%"
 	if /i "%p:~,1%" equ "d" call:checkdir "%p:~1%"
 )
 shift
-goto:checkparams
+goto:checkparams1
 
 :checkfile
-if "%jpeg%" neq "0" (
-	if /i "%~x1" equ ".jpg"  call:checkfiletype jpeg "%~1"
-	if /i "%~x1" equ ".jpe"  call:checkfiletype jpeg "%~1"
-	if /i "%~x1" equ ".jpeg" call:checkfiletype jpeg "%~1"
+if "%ispng%" neq "0" if /i "%~x1" equ ".png" if not defined ispng set "ispng=yes"
+if "%isjpeg%" neq "0" (
+	if /i "%~x1" equ ".jpg"  if not defined isjpeg set "isjpeg=yes"
+	if /i "%~x1" equ ".jpe"  if not defined isjpeg set "isjpeg=yes"
+	if /i "%~x1" equ ".jpeg" if not defined isjpeg set "isjpeg=yes"
 )
-if "%png%" neq "0" if /i "%~x1" equ ".png" call:checkfiletype png "%~1"
-if "%gif%" neq "0" if /i "%~x1" equ ".gif" call:checkfiletype gif "%~1"
+if "%isgif%" neq "0" if /i "%~x1" equ ".gif" if not defined isgif set "isgif=yes"
 exit /b
 	
-::%1 - jpeg | png | gif
-::%2 - full path to the file
-:checkfiletype
-if not defined %~1 call:%~1
-exit /b
-
 :checkdir
-if not defined jpeg call:checkmask %1 ""*.jpg" "*.jpe?"" && call:jpeg
-if not defined png  call:checkmask %1 "*.png" && call:png
-if not defined gif  call:checkmask %1 "*.gif" && call:gif
+if "%ispng%" neq "0"  if not defined ispng  call:checkmask %1 "*.png" && set "ispng=yes"
+if "%isjpeg%" neq "0" if not defined isjpeg call:checkmask %1 ""*.jpg" "*.jpe?"" && set "isjpeg=yes"
+if "%isgif%" neq "0"  if not defined isgif  call:checkmask %1 "*.gif" && set "isgif=yes"
 exit /b
 
 :checkmask
@@ -1209,7 +1206,11 @@ call:dopause & exit /b
 :errormsg
 title [Error] %name% %version%
 if exist "%tmppath%" 1>nul 2>&1 rd /s /q "%tmppath%"
-if "%~1" neq "" 1>&2 echo.%~1
+if "%~1" neq "" (
+	1>&2 echo.%spacebar%
+	1>&2 echo.%~1
+	1>&2 echo.%spacebar%
+)
 call:dopause
 exit /b
 
