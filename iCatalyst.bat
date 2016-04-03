@@ -242,9 +242,9 @@ call:dopause & exit /b
 set "ispng=%png%" & set "isjpeg=%jpeg%" & set "isgif=%gif%"
 :checkparams1
 if "%~1" equ "" (
-	if /i "%ispng%" equ "yes" call:png
-	if /i "%isjpeg%" equ "yes" call:jpeg
-	if /i "%isgif%" equ "yes" call:gif
+	if /i "%ispng%" equ "yes"  (call:png)  else if not defined png  set "png=0"
+	if /i "%isjpeg%" equ "yes" (call:jpeg) else if not defined jpeg set "jpeg=0"
+	if /i "%isgif%" equ "yes"  (call:gif)  else if not defined gif  set "gif=0"
 	set "ispng=" & set "isjpeg=" & set "isgif="
 	exit /b
 )
@@ -257,19 +257,19 @@ shift
 goto:checkparams1
 
 :checkfile
-if "%ispng%" neq "0" if /i "%~x1" equ ".png" if not defined ispng set "ispng=yes"
-if "%isjpeg%" neq "0" (
-	if /i "%~x1" equ ".jpg"  if not defined isjpeg set "isjpeg=yes"
-	if /i "%~x1" equ ".jpe"  if not defined isjpeg set "isjpeg=yes"
-	if /i "%~x1" equ ".jpeg" if not defined isjpeg set "isjpeg=yes"
+if not defined ispng if /i "%~x1" equ ".png" set "ispng=yes"
+if not defined isjpeg (
+	if /i "%~x1" equ ".jpg"  set "isjpeg=yes"
+	if /i "%~x1" equ ".jpe"  set "isjpeg=yes"
+	if /i "%~x1" equ ".jpeg" set "isjpeg=yes"
 )
-if "%isgif%" neq "0" if /i "%~x1" equ ".gif" if not defined isgif set "isgif=yes"
+if not defined isgif if /i "%~x1" equ ".gif" set "isgif=yes"
 exit /b
 	
 :checkdir
-if "%ispng%" neq "0"  if not defined ispng  call:checkmask %1 "*.png" && set "ispng=yes"
-if "%isjpeg%" neq "0" if not defined isjpeg call:checkmask %1 ""*.jpg" "*.jpe?"" && set "isjpeg=yes"
-if "%isgif%" neq "0"  if not defined isgif  call:checkmask %1 "*.gif" && set "isgif=yes"
+if not defined ispng  call:checkmask %1 "*.png" && set "ispng=yes"
+if not defined isjpeg call:checkmask %1 ""*.jpg" "*.jpe?"" && set "isjpeg=yes"
+if not defined isgif  call:checkmask %1 "*.gif" && set "isgif=yes"
 exit /b
 
 :checkmask
