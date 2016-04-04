@@ -78,7 +78,7 @@ set "rnd=%random%"
 if not exist "%tmppath%%rnd%\" (
 	set "tmppath=%tmppath%%rnd%"
 	1>nul 2>&1 md "%tmppath%%rnd%" || (
-		call:errormsg "Can not create temporary directory:^|%tmppath%%rnd%!"
+		call:errormsg Can not create temporary directory:^|%tmppath%%rnd%!
 		exit /b
 	)
 ) else (
@@ -142,13 +142,17 @@ call:readini "%paramfile%"
 if defined perr (
 	set "perr=%perr:~,-1%"
 	set "perr=!perr:;=, !"
-	call:errormsg "Unknown !perr! setting^(s^) value."
+	call:errormsg Unknown !perr! setting(s^^^^^) value.
 	exit /b
 )
 if not defined params for %%a in ("%filelisterr%") do if %%~za neq 0 (
-	1>&2 echo. Unknown parameters:
-	1>&2 type "%%~a"
-	call:errormsg 
+	call:errormsg
+	1>&2 (
+		echo.%spacebar%
+		echo. Unknown parameters:
+		type "%%~a"
+		echo.%spacebar%
+	)
 	exit /b
 )
 1>nul 2>&1 del /f/q "%paramfile%"
@@ -166,7 +170,7 @@ if defined outdir (
 	if "!outdir:~-1!" neq "\" set "outdir=!outdir!\"
 	if not exist "!outdir!" (
 		1>nul 2>&1 md "!outdir!" || (
-			call:errormsg "Can not create directory for optimized files: !outdir!"
+			call:errormsg Can not create directory for optimized files: !outdir!
 			exit /b
 )))
 
@@ -203,7 +207,7 @@ if exist "%filelisterr%" (
 :endsetcounters
 if %TotalNumPNG% equ 0 if %TotalNumJPG% equ 0 if %TotalNumGIF% equ 0 (
 	call:clearscreen
-	call:errormsg "No images found. Please check input and try again."
+	call:errormsg No images found. Please check input and try again.
 	exit /b
 )
 for /l %%a in (1,1,%thread%) do (
@@ -1206,14 +1210,14 @@ call:dopause & exit /b
 :errormsg
 title [Error] %name% %version%
 if exist "%tmppath%" 1>nul 2>&1 rd /s /q "%tmppath%"
-if "%~1" neq "" (
-	1>&2 echo.%spacebar%
-	1>&2 echo.%~1
-	1>&2 echo.%spacebar%
+if "%~1" neq "" 1>&2 (
+	echo.%spacebar%
+	echo. %*
+	echo.%spacebar%
 )
 call:dopause
 exit /b
-
+                                                                  
 :dopause
 setlocal
 set "x=%~f0"
