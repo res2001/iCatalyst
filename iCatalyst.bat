@@ -380,18 +380,21 @@ set "optsize=%~3"
 set "measure="
 call:prepsize origsize measure
 call:prepsize2 optsize measure
-set /a "change=%~4"
 set "origsize=          %origsize% %measure%"
 set "optsize=          %optsize% %measure%"
+set "change=%~4"
+set "origsize2=%~2"
 call:prepsize change measure
+call:prepsize2 origsize2 measure
+call:perccalc %origsize2:.=% %change:.=% percent
 set "change=           %change% %measure%"
-set "percent=          %~5%%"
+set "percent=          %percent%%%"
 echo. !fn:~,%TFN%!^|%origsize:~-10%^|%optsize:~-11%^|%change:~-11%^|%percent:~-10%
 endlocal
 exit /b
 
 ::%1 - variable name for number (in/out)
-::%2 - cariable name for measure (out)
+::%2 - variable name for measure (out)
 :prepsize
 setlocal
 set "var=!%~1!"
@@ -403,7 +406,7 @@ if %var% geq %MB% (set "meas=MB" & goto:MBprepsize)
 if %var% geq %KB% (set "meas=KB" & goto:KBprepsize)
 goto:finprepsize
 ::%1 - variable name for number (in/out)
-::%2 - cariable name for measure (in/out)
+::%2 - variable name for measure (in/out)
 :prepsize2
 if not defined %~2 exit /b
 setlocal
@@ -856,11 +859,11 @@ exit /b 0
 setlocal
 ::echo.%~0[in]: %1	%~2	%~z1
 set /a "change=%~z1-%~2"
-call:perccalc %~2 %change% perc
+::call:perccalc %~2 %change% perc
 set /a "change=%~z1-%~2"
->>"%logfile2%" echo.%~1;%~2;%~z1;%change%;%perc%;ok
+>>"%logfile2%" echo.%~1;%~2;%~z1;%change%;0.00;ok
 if %thread% equ 1 (
-	call:printfileinfo "%~1" %2 %~z1 %change% %perc%
+	call:printfileinfo "%~1" %2 %~z1 %change% 0.00
 )
 endlocal
 exit /b
@@ -1004,6 +1007,7 @@ exit /b
 :stepcalc
 set /a "TotalSize%~1+=%~2"
 set /a "ImageSize%~1+=%~3"
+::echo.!TotalSize%~1!	!ImageSize%~1!
 if !ImageSize%~1! lss %BYTECONV% if !TotalSize%~1! lss %BYTECONV% exit /b
 if !stepB%~1! gtr 1 (
 	call:division2 TotalSize%~1 !stepB%~1! !step10%~1!
@@ -1013,7 +1017,7 @@ set /a "STotalSize%~1+=!TotalSize%~1!"
 set /a "SImageSize%~1+=!ImageSize%~1!"
 set "TotalSize%~1=0"
 set "ImageSize%~1=0"
-::echo.!STotalSize%~1!	!SImageSize%~1!	!step%~1!	!step10%~1!	!stepB%~1!
+::echo.%~0: !STotalSize%~1!	!SImageSize%~1!	!step%~1!	!step10%~1!	!stepB%~1!
 if !SImageSize%~1! lss %BYTECONV% if !STotalSize%~1! lss %BYTECONV% exit /b
 set /a "step%~1=(!step%~1!+1)%%3"
 if !step%~1! equ 0 (
@@ -1026,7 +1030,7 @@ if !step%~1! equ 0 (
 	set /a "STotalSize%~1/=10"
 	set /a "SImageSize%~1/=10"
 )
-::echo.!STotalSize%~1!	!SImageSize%~1!	!step%~1!	!step10%~1!	!stepB%~1!
+::echo.%~0: !STotalSize%~1!	!SImageSize%~1!	!step%~1!	!step10%~1!	!stepB%~1!
 exit /b
 
 ::%1 - JPG|PNG|GIF
