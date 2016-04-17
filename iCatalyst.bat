@@ -3,13 +3,19 @@
 ::Lorents & Res2001 2010-2016
 
 setlocal enabledelayedexpansion
-set "name=Image Catalyst"
-set "version=2.6"
-set "spacebar=-------------------------------------------------------------------------------"
 if athrda equ a%~1a call:threadwork %4 %5 "%~2" "%~3" & exit /b
 if bupdateicb equ b%~1b call:icupdate & exit /b
 if cc equ c%~1c call:helpmsg & exit /b
+if ##secondcall## equ #%~1# goto:main
+set "CMDCMDLINE=%CMDCMDLINE%"
+set "paramf=%*"
+cmd /c ""%~0" #secondcall# %*"
+exit /b
+:main
+set "name=Image Catalyst"
+set "version=2.6"
 title %name% %version%
+set "spacebar=-------------------------------------------------------------------------------"
 set "fullname=%~0"
 set "scrpath=%~dp0"
 set "sconfig=%scrpath%Tools\"
@@ -48,6 +54,7 @@ for %%a in (
 	"%apps%jpegtran.exe"
 	"%apps%pngwolfzopfli.exe"
 	"%apps%truepng.exe"
+	"%scripts%pfilter.js"
 	"%scripts%filter.js"
 	"%scripts%update.js"
 ) do (
@@ -137,7 +144,7 @@ set "updatecheck=%update%" & set "update="
 if /i "%giftags%" equ "true" (set "giftags=--no-comments --no-extensions --no-names") else (set "giftags=")
 call set "outdir=%outdir%"
 if defined outdir set oparam="/Outdir:%outdir%"
-cscript //nologo //E:JScript "%scripts%pfilter.js" %* %oparam% 1>"%paramfile%" 2>"%filelisterr%"
+cscript //nologo //E:JScript "%scripts%pfilter.js" %paramf% %oparam% 1>"%paramfile%" 2>"%filelisterr%"
 call:readini "%paramfile%"
 if defined perr (
 	set "perr=%perr:~,-1%"
@@ -313,8 +320,21 @@ if defined runic (
 exit /b
 
 :runningcheck2
-2>nul (3>"%iclock%" 1>&3 call:runic2 "%~1" || (call:waitrandom 5000 & goto:runningcheck2))
+2>nul (3>"%iclock%" 1>&3 call:runic2 "%~1" || (
+	if exist "%systemroot%\system32\timeout.exe" (1>nul 2>&1 timeout /t 5) else call:waitrandom 5000
+	goto:runningcheck2
+))
 exit /b
+
+:runic2
+call:waitrandom 5000
+call:runic "%~1"
+if defined runic (
+	if %runic% lss %lastrunic% exit /b 0
+	set "lastrunic=%runic%"
+	goto:runic2
+)	
+exit /b 0
 
 :runic
 set "runic="
