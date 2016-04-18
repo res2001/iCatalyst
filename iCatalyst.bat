@@ -143,9 +143,7 @@ set "updatecheck=%update%" & set "update="
 if /i "%giftags%" equ "true" (set "giftags=--no-comments --no-extensions --no-names") else (set "giftags=")
 call set "outdir=%outdir%"
 if defined outdir set oparam="/Outdir:%outdir%"
-@echo on
 cscript //nologo //E:JScript "%scripts%pfilter.js" %* %oparam% 1>"%paramfile%" 2>"%filelisterr%"
-@echo off
 call:readini "%paramfile%"
 if defined perr (
 	set "perr=%perr:~,-1%"
