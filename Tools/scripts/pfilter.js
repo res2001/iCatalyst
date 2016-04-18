@@ -19,6 +19,7 @@ var rfile = new Array(
 argn = WScript.Arguments.named;
 arg = new Enumerator(argn);
 for(;!arg.atEnd();arg.moveNext()) {
+	WScript.echo(arg.item().toUpperCase());
 	switch(arg.item().toUpperCase()) {
 	case "OUTDIR":
 		outdirorig = argn.Item(arg.item());
@@ -48,9 +49,10 @@ if(rfile[JPG].opt > 0 || rfile[PNG].opt > 0 || rfile[GIF].opt > 0) {
 	if(rfile[GIF].opt == -1) rfile[GIF].opt = 0;
 }
 
-for(i=0;i<WScript.Arguments.unnamed.count;++i) {
-	basepath = WorkBasepath(WScript.Arguments.unnamed(i));
-	if(basepath != "") params += "\"" + basepath + "\" ";
+for(i=0;i<WScript.Arguments.unnamed.count;++i)
+	if(WScript.Arguments.unnamed(i).toUpperCase() != "#SECONDCALL#") {
+		basepath = WorkBasepath(WScript.Arguments.unnamed(i));
+		if(basepath != "") params += "\"" + basepath + "\" ";
 }
 
 if(perr != "")			echo("perr="+perr);

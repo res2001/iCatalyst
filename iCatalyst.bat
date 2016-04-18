@@ -3,12 +3,10 @@
 ::Lorents & Res2001 2010-2016
 
 setlocal enabledelayedexpansion
-if athrda equ a%~1a call:threadwork %4 %5 "%~2" "%~3" & exit /b
-if bupdateicb equ b%~1b call:icupdate & exit /b
-if cc equ c%~1c call:helpmsg & exit /b
+if #thrd# equ #%~1# call:threadwork %4 %5 "%~2" "%~3" & exit /b
+if #updateic# equ #%~1# call:icupdate & exit /b
 if ##secondcall## equ #%~1# goto:main
-set "CMDCMDLINE=%CMDCMDLINE%"
-set "paramf=%*"
+2>nul set "CMDCMDLINE=%CMDCMDLINE%"
 cmd /c ""%~0" #secondcall# %*"
 exit /b
 :main
@@ -16,6 +14,7 @@ set "name=Image Catalyst"
 set "version=2.6"
 title %name% %version%
 set "spacebar=-------------------------------------------------------------------------------"
+if ## equ #%~2# call:helpmsg & exit /b
 set "fullname=%~0"
 set "scrpath=%~dp0"
 set "sconfig=%scrpath%Tools\"
@@ -144,7 +143,9 @@ set "updatecheck=%update%" & set "update="
 if /i "%giftags%" equ "true" (set "giftags=--no-comments --no-extensions --no-names") else (set "giftags=")
 call set "outdir=%outdir%"
 if defined outdir set oparam="/Outdir:%outdir%"
-cscript //nologo //E:JScript "%scripts%pfilter.js" %paramf% %oparam% 1>"%paramfile%" 2>"%filelisterr%"
+@echo on
+cscript //nologo //E:JScript "%scripts%pfilter.js" %* %oparam% 1>"%paramfile%" 2>"%filelisterr%"
+@echo off
 call:readini "%paramfile%"
 if defined perr (
 	set "perr=%perr:~,-1%"
