@@ -6,7 +6,7 @@ setlocal enabledelayedexpansion
 if #thrd# equ #%~1# call:threadwork %4 %5 "%~2" "%~3" & exit /b
 if #updateic# equ #%~1# call:icupdate & exit /b
 if ##secondcall## equ #%~1# goto:main
-set "CMDCMDLINE=%CMDCMDLINE%" 1>nul 2>nul
+set "CMDCMDLINE1=%CMDCMDLINE%" 1>nul 2>nul
 set "paramf=%*" 1>nul 2>nul
 cmd /c ""%~0" #secondcall#"
 exit /b
@@ -1246,13 +1246,13 @@ exit /b
 :dopause
 setlocal
 set "x=%~f0"
-echo.%CMDCMDLINE% 2>nul | 1>nul 2>&1 findstr /ilc:"%x%" && 1>nul 2>&1 pause
+1>nul echo.%CMDCMDLINE1% 2>nul && (echo.%CMDCMDLINE1% | 1>nul 2>&1 findstr /ilc:"%x%" && 1>nul 2>&1 pause)
 set "x="
 endlocal & exit /b
 
 :clearscreen
 setlocal
 set "x=%~f0"
-echo.%CMDCMDLINE% 2>nul | 1>nul 2>&1 findstr /ilc:"%x%" && cls
+1>nul echo.%CMDCMDLINE1% 2>nul && (echo.%CMDCMDLINE1% 2>nul | 1>nul 2>&1 findstr /ilc:"%x%" && cls)
 set "x="
 endlocal & exit /b
