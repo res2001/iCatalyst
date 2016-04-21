@@ -5,17 +5,13 @@
 setlocal enabledelayedexpansion
 if #thrd# equ #%~1# call:threadwork %4 %5 "%~2" "%~3" & exit /b
 if #updateic# equ #%~1# call:icupdate & exit /b
-if ##secondcall## equ #%~1# goto:main
-set "CMDCMDLINE1=%CMDCMDLINE%" 1>nul 2>nul
-set "paramf=%*" 1>nul 2>nul
-cmd /c ""%~0" #secondcall#"
-exit /b
-:main
 set "name=Image Catalyst"
 set "version=2.6"
+set "oldtitle="
+call:gettitle oldtitle
 title %name% %version%
 set "spacebar=-------------------------------------------------------------------------------"
-if not defined paramf call:helpmsg & exit /b
+if ## equ #%~1# call:helpmsg & exit /b
 set "fullname=%~0"
 set "scrpath=%~dp0"
 set "sconfig=%scrpath%Tools\"
@@ -77,7 +73,9 @@ if defined nofile (
 	1>&2 echo.
 	1>&2 echo. Check permissions and try again.
 	1>&2 echo.%spacebar%
-	call:dopause & exit /b
+	call:dopause
+	if defined oldtitle title %oldtitle%
+	exit /b
 )
 
 :settemp
@@ -86,6 +84,7 @@ if not exist "%tmppath%%rnd%\" (
 	set "tmppath=%tmppath%%rnd%"
 	1>nul 2>&1 md "%tmppath%%rnd%" || (
 		call:errormsg "Can not create temporary directory:" "%tmppath%%rnd%!"
+		if defined oldtitle title %oldtitle%
 		exit /b
 	)
 ) else (
@@ -144,12 +143,13 @@ set "updatecheck=%update%" & set "update="
 if /i "%giftags%" equ "true" (set "giftags=--no-comments --no-extensions --no-names") else (set "giftags=")
 call set "outdir=%outdir%"
 if defined outdir set oparam="/Outdir:%outdir%"
-cscript //nologo //E:JScript "%scripts%pfilter.js" %paramf% %oparam% 1>"%paramfile%" 2>"%filelisterr%"
+cscript //nologo //E:JScript "%scripts%pfilter.js" %* %oparam% 1>"%paramfile%" 2>"%filelisterr%"
 call:readini "%paramfile%"
 if defined perr (
 	set "perr=%perr:~,-1%"
 	set "perr=!perr:;=, !"
 	call:errormsg "Unknown !perr! setting(s^) value."
+	if defined oldtitle title %oldtitle%
 	exit /b
 )
 if not defined params for %%a in ("%filelisterr%") do if %%~za neq 0 (
@@ -161,6 +161,7 @@ if not defined params for %%a in ("%filelisterr%") do if %%~za neq 0 (
 		echo.%spacebar%
 	)
 	call:errormsg
+	if defined oldtitle title %oldtitle%
 	exit /b
 )
 1>nul 2>&1 del /f/q "%paramfile%"
@@ -179,6 +180,7 @@ if defined outdir (
 	if not exist "!outdir!" (
 		1>nul 2>&1 md "!outdir!" || (
 			call:errormsg "Can not create directory for optimized files:" "!outdir!"
+			if defined oldtitle title %oldtitle%
 			exit /b
 )))
 
@@ -216,6 +218,7 @@ if exist "%filelisterr%" (
 if %TotalNumPNG% equ 0 if %TotalNumJPG% equ 0 if %TotalNumGIF% equ 0 (
 	call:clearscreen
 	call:errormsg "No images found. Please check input and try again."
+	if defined oldtitle title %oldtitle%
 	exit /b
 )
 for /l %%a in (1,1,%thread%) do (
@@ -248,7 +251,9 @@ for /l %%z in (1,1,%thread%) do (
 echo.%spacebar%
 call:setitle
 call:end
-call:dopause & exit /b
+call:dopause
+if defined oldtitle title %oldtitle%
+exit /b
 
 :checkparams
 set "ispng=%png%" & set "isjpeg=%jpeg%" & set "isgif=%gif%"
@@ -1246,13 +1251,40 @@ exit /b
 :dopause
 setlocal
 set "x=%~f0"
-1>nul echo.%CMDCMDLINE1% 2>nul && (echo.%CMDCMDLINE1% | 1>nul 2>&1 findstr /ilc:"%x%" && 1>nul 2>&1 pause)
+1>nul echo.%CMDCMDLINE% 2>nul && (echo.%CMDCMDLINE% 2>nul | 1>nul 2>&1 findstr /ilc:"%x%" && 1>nul 2>&1 pause)
 set "x="
 endlocal & exit /b
 
 :clearscreen
 setlocal
 set "x=%~f0"
-1>nul echo.%CMDCMDLINE1% 2>nul && (echo.%CMDCMDLINE1% 2>nul | 1>nul 2>&1 findstr /ilc:"%x%" && cls)
+1>nul echo.%CMDCMDLINE% 2>nul && (echo.%CMDCMDLINE% 2>nul | 1>nul 2>&1 findstr /ilc:"%x%" && cls)
 set "x="
 endlocal & exit /b
+
+:gettitle
+setlocal
+set "tpid="
+call:getpid tpid || (endlocal & exit /b 1)
+set "ctitle="
+set "titfile=%TEMP%\%RANDOM%%RANDOM%.tasklist.txt"
+1>"%titfile%" 2>nul tasklist /v /nh /fo csv /fi "pid eq %tpid%"
+if errorlevel 1 1>"%titfile%" 2>nul tasklist /v /nh /fo csv /fi "ID Процесса eq %tpid%"
+for /f "usebackq tokens=8,* delims=," %%a in ("%titfile%") do (
+	for /f "tokens=1 delims=-" %%c in ("%%~b") do set "ctitle=%%~c"
+)
+1>nul 2>&1 del /f/q "%titfile%"
+if not defined ctitle (endlocal & exit /b 2)
+endlocal & set "%~1=%ctitle:~,-1%"
+exit /b 0
+
+:getpid
+setlocal
+set "cpid="
+set "pidfile=%TEMP%\%RANDOM%%RANDOM%.ic.wmic.process.txt"
+wmic process get CommandLine,Name,ParentProcessID,ProcessID /format:csv >"%pidfile%"
+for /f "tokens=7,8 delims=," %%a in ('type "%pidfile%" ^| findstr "CommandLine,Name,ParentProcessID,ProcessID" ') do set "cpid=%%a"
+1>nul 2>&1 del /f/q "%pidfile%"
+if not defined cpid endlocal & exit /b 1
+endlocal & set "%~1=%cpid%"
+exit /b 0
