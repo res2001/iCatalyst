@@ -8,6 +8,8 @@ if #updateic# equ #%~1# call:icupdate & exit /b
 set "name=Image Catalyst"
 set "version=2.6"
 set "oldtitle="
+set "consolepid="
+call:getpid consolepid
 call:gettitle oldtitle
 title %name% %version%
 set "spacebar=-------------------------------------------------------------------------------"
@@ -84,7 +86,6 @@ if not exist "%tmppath%%rnd%\" (
 	set "tmppath=%tmppath%%rnd%"
 	1>nul 2>&1 md "%tmppath%%rnd%" || (
 		call:errormsg "Can not create temporary directory:" "%tmppath%%rnd%!"
-		if defined oldtitle title %oldtitle%
 		exit /b
 	)
 ) else (
@@ -149,7 +150,6 @@ if defined perr (
 	set "perr=%perr:~,-1%"
 	set "perr=!perr:;=, !"
 	call:errormsg "Unknown !perr! setting(s^) value."
-	if defined oldtitle title %oldtitle%
 	exit /b
 )
 if not defined params for %%a in ("%filelisterr%") do if %%~za neq 0 (
@@ -161,7 +161,6 @@ if not defined params for %%a in ("%filelisterr%") do if %%~za neq 0 (
 		echo.%spacebar%
 	)
 	call:errormsg
-	if defined oldtitle title %oldtitle%
 	exit /b
 )
 1>nul 2>&1 del /f/q "%paramfile%"
@@ -180,7 +179,6 @@ if defined outdir (
 	if not exist "!outdir!" (
 		1>nul 2>&1 md "!outdir!" || (
 			call:errormsg "Can not create directory for optimized files:" "!outdir!"
-			if defined oldtitle title %oldtitle%
 			exit /b
 )))
 
@@ -218,7 +216,6 @@ if exist "%filelisterr%" (
 if %TotalNumPNG% equ 0 if %TotalNumJPG% equ 0 if %TotalNumGIF% equ 0 (
 	call:clearscreen
 	call:errormsg "No images found. Please check input and try again."
-	if defined oldtitle title %oldtitle%
 	exit /b
 )
 for /l %%a in (1,1,%thread%) do (
@@ -1235,7 +1232,9 @@ title [Manual] %name% %version%
 	echo.%spacebar%
 )
 if exist "%tmppath%" 1>nul 2>&1 rd /s /q "%tmppath%"
-call:dopause & exit /b
+call:dopause
+if defined oldtitle title %oldtitle%
+exit /b
 
 :errormsg
 title [Error] %name% %version%
@@ -1246,6 +1245,7 @@ if "%~1" neq "" 1>&2 (
 	echo.%spacebar%
 )
 call:dopause
+if defined oldtitle title %oldtitle%
 exit /b
                                                                   
 :dopause
@@ -1264,12 +1264,12 @@ endlocal & exit /b
 
 :gettitle
 setlocal
-set "tpid="
-call:getpid tpid || (endlocal & exit /b 1)
+if not defined consolepid exit /b 1
 set "ctitle="
 set "titfile=%TEMP%\%RANDOM%%RANDOM%.tasklist.txt"
-1>"%titfile%" 2>nul tasklist /v /nh /fo csv /fi "pid eq %tpid%"
-if errorlevel 1 1>"%titfile%" 2>nul tasklist /v /nh /fo csv /fi "ID Процесса eq %tpid%"
+1>"%titfile%" 2>nul tasklist /v /nh /fo csv /fi "pid eq %consolepid%"
+::For WinXP Rus
+if errorlevel 1 1>"%titfile%" 2>nul tasklist /v /nh /fo csv /fi "ID Процесса eq %consolepid%"
 for /f "usebackq tokens=8,* delims=," %%a in ("%titfile%") do (
 	for /f "tokens=1 delims=-" %%c in ("%%~b") do set "ctitle=%%~c"
 )
