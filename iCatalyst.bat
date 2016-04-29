@@ -22,8 +22,10 @@ set "tmppath=%TEMP%\iCatalyst\"
 set "errortimewait=30"
 set "iclock=%TEMP%ic.lck"
 set "LOG=%scrpath%\iCatalyst"
+if exist "%systemroot%\system32\timeout.exe" (set "istimeout=yes") else set "istimeout="
 set "runic="
-call:runic "%name% %version%"
+call:runningcheck "%name% %version%"
+::pause & title %oldtitle%&exit /b
 if defined runic (
 	call:clearscreen
 	title [Waiting] %name% %version%
@@ -315,26 +317,30 @@ exit /b
 call:runic "%~1"
 set "lastrunic=%runic%"
 if defined runic (
+	call:clearscreen
 	title [Waiting] %name% %version%
-	echo.Another process %name% is running. Waiting for it to shut down.
+	echo.Another process %name% is running. Waiting for it to shut down or press any key.
 	call:runningcheck2 "%~1"
 )
 exit /b
 
 :runningcheck2
-2>nul (3>"%iclock%" 1>&3 call:runic2 "%~1" || (
-	if exist "%systemroot%\system32\timeout.exe" (1>nul 2>&1 timeout /t 5) else call:waitrandom 5000
+2>nul (5>"%iclock%" call:runic2 "%~1" || (
+	call:waitpresskey 5000 || exit /b
 	goto:runningcheck2
 ))
 exit /b
 
 :runic2
-call:waitrandom 5000
+call:runic "%~1"
+set "lastrunic=%runic%"
+:runic3
+call:waitpresskey 5000 || exit /b 0
 call:runic "%~1"
 if defined runic (
 	if %runic% lss %lastrunic% exit /b 0
 	set "lastrunic=%runic%"
-	goto:runic2
+	goto:runic3
 )	
 exit /b 0
 
@@ -554,9 +560,24 @@ goto:waitflag
 
 :waitrandom
 setlocal
+if not defined istimeout goto:waitrandom2
+set /a "ww=%random%%%(%1/1000)"
+1>nul 2>&1 timeout /t %ww%
+endlocal & exit /b
+:waitrandom2
 set /a "ww=%random%%%%1"
 1>nul 2>&1 ping -n 1 -w %ww% 127.255.255.255
 endlocal & exit /b
+
+::If press key return errorlevel=1. If timeout - errorlevel=0
+:waitpresskey
+setlocal
+set "ww=%~1"
+if defined istimeout (
+	if %ww% lss 1000 set "ww=1000"
+	timeout /t !ww:~,-3! 2>nul | 1>nul 2>&1 findstr /e "0" || (endlocal & exit /b 1)
+) else call:waitrandom %ww%
+endlocal & exit /b 0
 
 :initsource
 set "isjpeg="
