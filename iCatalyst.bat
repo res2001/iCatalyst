@@ -744,6 +744,8 @@ if %png% equ 1 (
 	)
 	truepng -y -i0 -zw7 -zc!zc! -zm!zm! -zs!zs! -f5 -fs:7 -na -nc -np "%filework%" 1>nul 2>&1
 	if errorlevel 1 (call:saverrorlog "%~f2" 2 %~1 PNG & goto:pngfwe)
+	deflopt -k "%filework%" 1>nul 2>&1
+	if errorlevel 1 (call:saverrorlog "%~f2" 2 %~1 PNG & goto:pngfwe)
 	advdef -z3 "%filework%" 1>nul 2>&1
 	if errorlevel 1 (call:saverrorlog "%~f2" 2 %~1 PNG & goto:pngfwe)
 )
@@ -850,9 +852,9 @@ if not exist "%~2" (
 	call:saverrorlog "%~f2" 3 %~1 GIF
 	exit /b 1
 )
-gifsicle --batch %giftags% --optimize=3 --output "%filework1%" "%~2" 1>nul 2>&1
+gifsicle --batch %giftags% --optimize=0 --output "%filework1%" "%~2" 1>nul 2>&1
 if errorlevel 1 (call:saverrorlog "%~f2" 2 %~1 GIF & goto:giffwe)
-gifsicle --batch %giftags% --output "%filework2%" "%~2" 1>nul 2>&1
+gifsicle --batch %giftags% --optimize=3 --output "%filework2%" "%~2" 1>nul 2>&1
 if errorlevel 1 (call:saverrorlog "%~f2" 2 %~1 GIF & goto:giffwe)
 if /i "%~f2" neq "%~f3" (
 	call:backup "%filework1%" "%~f2" >nul || set "errbackup=1"
@@ -1290,7 +1292,7 @@ set "ctitle="
 set "titfile=%TEMP%\%RANDOM%%RANDOM%.tasklist.txt"
 1>"%titfile%" 2>nul tasklist /v /nh /fo csv /fi "pid eq %consolepid%"
 ::For WinXP Rus
-if errorlevel 1 1>"%titfile%" 2>nul tasklist /v /nh /fo csv /fi "ID Процесса eq %consolepid%"
+if errorlevel 1 1>"%titfile%" 2>nul tasklist /v /nh /fo csv /fi "ID ┬П├а┬о├ж┬е├б├б┬а eq %consolepid%"
 for /f "usebackq tokens=8,* delims=," %%a in ("%titfile%") do (
 	for /f "tokens=1 delims=-" %%c in ("%%~b") do set "ctitle=%%~c"
 )
