@@ -19,24 +19,23 @@ set "scrpath=%~dp0"
 set "sconfig=%scrpath%Tools\"
 set "scripts=%scrpath%Tools\scripts\"
 set "tmppath=%TEMP%\iCatalyst\"
-set "errortimewait=30"
+set "errortimewait=3000"
 set "iclock=%TEMP%ic.lck"
 set "LOG=%scrpath%\iCatalyst"
 if exist "%systemroot%\system32\timeout.exe" (set "istimeout=yes") else set "istimeout="
-set "runic="
 call:runningcheck "%name% %version%"
-::pause & title %oldtitle%&exit /b
-if defined runic (
-	call:clearscreen
-	title [Waiting] %name% %version%
-	1>&2 echo.%spacebar%
-	1>&2 echo. Attention: running %runic% of %name%.
-	1>&2 echo.
-	1>&2 echo. Press Enter to continue.
-	1>&2 echo.%spacebar%
-	1>nul pause
-	call:clearscreen
-)
+::echo.This process is work&pause & title %oldtitle%&exit /b
+::if defined runic (
+::	call:clearscreen
+::	title [Waiting] %name% %version%
+::	1>&2 echo.%spacebar%
+::	1>&2 echo. Attention: running %runic% of %name%.
+::	1>&2 echo.
+::	1>&2 echo. Press Enter to continue.
+::	1>&2 echo.%spacebar%
+::	1>nul pause
+::	call:clearscreen
+::)
 set "LOG=%LOG%%runic%"
 if not defined runic if exist "%tmppath%" 1>nul 2>&1 rd /s /q "%tmppath%"
 set "apps=%~dp0Tools\apps\"
@@ -314,40 +313,35 @@ endlocal
 exit /b
 
 :runningcheck
+title [Waiting] %name%
+setlocal
 call:runic "%~1"
-set "lastrunic=%runic%"
-if defined runic (
+if %runic% gtr 0 (
 	call:clearscreen
-	title [Waiting] %name% %version%
 	echo.Another process %name% is running. Waiting for it to shut down or press any key.
-	call:runningcheck2 "%~1"
+::	call:runningcheck2 "%~1"
+	call:runic2 "%~1"
 )
-exit /b
+endlocal
+title %name% %version%
+exit /b 0
 
 :runningcheck2
 2>nul (5>"%iclock%" call:runic2 "%~1" || (
-	call:waitpresskey 5000 || exit /b
+	call:waitpresskey %errortimewait% || exit /b 1
 	goto:runningcheck2
 ))
-exit /b
+exit /b 0
 
 :runic2
+call:waitpresskey %errortimewait% || exit /b 0
 call:runic "%~1"
-set "lastrunic=%runic%"
-:runic3
-call:waitpresskey 5000 || exit /b 0
-call:runic "%~1"
-if defined runic (
-	if %runic% lss %lastrunic% exit /b 0
-	set "lastrunic=%runic%"
-	goto:runic3
-)	
+if %runic% gtr 0 goto:runic2
 exit /b 0
 
 :runic
-set "runic="
-for /f "tokens=* delims=" %%a in ('tasklist /fo csv /v /nh ^| find /i /c "%~1" ') do (
-	if %%a gtr 1 set "runic=%%a"
+for /f "tokens=* delims=" %%a in ('tasklist /fo csv /v /nh /fi "IMAGENAME eq cmd.exe" ^| find /i /c "%~1" ') do (
+	set "runic=%%a"
 )
 exit /b
 
