@@ -555,7 +555,9 @@ goto:waitflag
 :waitrandom
 setlocal
 if not defined istimeout goto:waitrandom2
-set /a "ww=%random%%%(%1/1000)"
+set "ww=%~1"
+if %~1 lss 1000 set "ww=1000"
+set /a "ww=%random%%%(%ww%/1000)"
 1>nul 2>&1 timeout /t %ww%
 endlocal & exit /b
 :waitrandom2
