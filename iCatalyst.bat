@@ -318,7 +318,11 @@ setlocal
 call:runic "%~1"
 if %runic% gtr 0 (
 	call:clearscreen
-	echo.Another process %name% is running. Waiting for it to shut down or press any key.
+	echo.%spacebar%
+	echo. Another process %name% is running.
+	echo.
+	echo. Waiting for it to shut down or press any key.
+	echo.%spacebar%
 ::	call:runningcheck2 "%~1"
 	call:runic2 "%~1"
 )
@@ -730,7 +734,7 @@ if %png% equ 2 (
 	)
 	if !zs! gtr 1 (
 		set "zs=1"
-		set "iter=20"
+		set "iter=15"
 	)
 	pngwolfzopfli --zopfli-iter=!iter! --zopfli-maxsplit=0 --zlib-window=15 --zlib-level=!zc! --zlib-memlevel=!zm! --zlib-strategy=!zs! --max-stagnate-time=0 --max-evaluations=1 --in="%filework%" --out="%filework%" 1>nul 2>&1
 	if errorlevel 1 (call:saverrorlog "%~f2" 2 %~1 PNG & goto:pngfwe)
