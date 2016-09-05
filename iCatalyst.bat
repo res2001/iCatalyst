@@ -37,7 +37,6 @@ call:runningcheck "%name% %version%"
 ::	call:clearscreen
 ::)
 set "LOG=%LOG%%runic%"
-if not defined runic if exist "%tmppath%" 1>nul 2>&1 rd /s /q "%tmppath%"
 set "apps=%~dp0Tools\apps\"
 PATH %apps%;%PATH%
 set "nofile="
@@ -727,7 +726,7 @@ if not exist "%~2" (
 if %png% equ 2 (
 	>"%pnglog%" 2>nul truepng -y -i0 -zw7 -zc7 -zm5-9 -zs0,1,3 -f0,5 -fs:1 %xtreme% -force -out "%filework%" "%~2"
 	if errorlevel 1 (call:saverrorlog "%~f2" 2 %~1 PNG & goto:pngfwe)
-	for /f "tokens=2,4,6,8,10 delims=:	" %%a in ('findstr /r /i /b /c:"zc:..zm:..zs:" "%pnglog%"') do (
+	for /f "tokens=2,4,6,8,10 delims=:	" %%a in ('findstr /r /i /b /c:"zc:..zm:..zs:" "%pnglog%" 2^>nul') do (
 		set "zc=%%a"
 		set "zm=%%b"
 		set "zs=%%c"
@@ -736,25 +735,25 @@ if %png% equ 2 (
 		set "zs=1"
 		set "iter=15"
 	)
-	pngwolfzopfli --zopfli-iter=!iter! --zopfli-maxsplit=0 --zlib-window=15 --zlib-level=!zc! --zlib-memlevel=!zm! --zlib-strategy=!zs! --max-stagnate-time=0 --max-evaluations=1 --in="%filework%" --out="%filework%" 1>nul 2>&1
+	1>nul 2>&1 pngwolfzopfli --zopfli-iter=!iter! --zopfli-maxsplit=0 --zlib-window=15 --zlib-level=!zc! --zlib-memlevel=!zm! --zlib-strategy=!zs! --max-stagnate-time=0 --max-evaluations=1 --in="%filework%" --out="%filework%"
 	if errorlevel 1 (call:saverrorlog "%~f2" 2 %~1 PNG & goto:pngfwe)
 )
 if %png% equ 1 (
 	>"%pnglog%" 2>nul truepng -y -i0 -zw7 -zc7 -zm8-9 -zs0,1,3 -f0,5 -fs:1 %advanced% -force -out "%filework%" "%~2"
 	if errorlevel 1 (call:saverrorlog "%~f2" 2 %~1 PNG & goto:pngfwe)
-	for /f "tokens=2,4,6,8,10 delims=:	" %%a in ('findstr /r /i /b /c:"zc:..zm:..zs:" "%pnglog%"') do (
+	for /f "tokens=2,4,6,8,10 delims=:	" %%a in ('findstr /r /i /b /c:"zc:..zm:..zs:" "%pnglog%" 2^>nul') do (
 		set "zc=%%a"
 		set "zm=%%b"
 		set "zs=%%c"
 	)
-	truepng -y -i0 -zw7 -zc!zc! -zm!zm! -zs!zs! -f5 -fs:7 -na -nc -np "%filework%" 1>nul 2>&1
+	1>nul 2>&1 truepng -y -i0 -zw7 -zc!zc! -zm!zm! -zs!zs! -f5 -fs:7 -na -nc -np "%filework%"
 	if errorlevel 1 (call:saverrorlog "%~f2" 2 %~1 PNG & goto:pngfwe)
-	deflopt -k "%filework%" 1>nul 2>&1
+	1>nul 2>&1 deflopt -k "%filework%"
 	if errorlevel 1 (call:saverrorlog "%~f2" 2 %~1 PNG & goto:pngfwe)
-	advdef -z3 "%filework%" 1>nul 2>&1
+	1>nul 2>&1 advdef -z3 "%filework%"
 	if errorlevel 1 (call:saverrorlog "%~f2" 2 %~1 PNG & goto:pngfwe)
 )
-deflopt -k "%filework%" 1>nul 2>&1
+1>nul 2>&1 deflopt -k "%filework%"
 if errorlevel 1 (call:saverrorlog "%~f2" 2 %~1 PNG & goto:pngfwe)
 call:backup2 "%~f2" "%filework%" "%~f3" || set "errbackup=1"
 if %errbackup% neq 0 (call:saverrorlog "%~f2" 2 %~1 PNG & goto:pngfwe)
