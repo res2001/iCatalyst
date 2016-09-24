@@ -1032,13 +1032,13 @@ if /i "%updatecheck%" equ "true" (
 	1>nul 2>&1 del /f /q "%iculck%"
 	if exist "%iculog%" (
 		call:readini "%iculog%"
-		if "%version%" neq "!ver!" (
+		if defined ver ( if "%version%" neq "!ver!" (
 			echo.
 			echo. New version available %name% !ver! 
 			echo.
 			echo. !url!
 			echo.%spacebar%
-		)
+		))
 		1>nul 2>&1 del /f /q "%iculog%"
 	)
 )
