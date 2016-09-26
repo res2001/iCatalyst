@@ -1031,6 +1031,7 @@ if /i "%updatecheck%" equ "true" (
 	call:waitflag "%iculck%"
 	1>nul 2>&1 del /f /q "%iculck%"
 	if exist "%iculog%" (
+		set "ver=" & set "url="
 		call:readini "%iculog%"
 		if defined ver ( if "%version%" neq "!ver!" (
 			echo.
@@ -1038,10 +1039,7 @@ if /i "%updatecheck%" equ "true" (
 			echo.
 			echo. !url!
 			echo.%spacebar%
-		))
-		1>nul 2>&1 del /f /q "%iculog%"
-	)
-)
+))))
 1>nul 2>&1 del /f /q "%logfile%*" "%countJPG%" "%countPNG%*" "%filelist%*" "%filelisterr%*" "%iclock%"
 if exist "%tmppath%" 1>nul 2>&1 rd /s /q "%tmppath%"
 exit /b
